@@ -1,0 +1,36 @@
+# Local Terraform state (acceptable to commit for Deliveries 1-3, but keep out of tracked files for safety)
+# Remove the next two lines if your team decides to commit local state per the assignment instructions.
+# terraform.tfstate
+# terraform.tfstate.backup
+
+# Crash logs
+crash.log
+crash.*.log
+# Override files (local developer overrides — never commit)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform CLI config (contains credentials paths)
+.terraformrc
+terraform.rc
+.terraform 
+.terraform.lock.hcl
+# Provider plugins downloaded by terraform init
+**/.terraform/
+
+# Terraform plan binary files
+*.tfplan
+tfplan
+
+# tfvars files that may contain secrets — use envs/dev/dev.tfvars for tracked config
+# *.tfvars   <- commented out; dev.tfvars is intentionally tracked
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp

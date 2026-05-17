@@ -22,7 +22,10 @@ terraform.rc
 # Provider plugins downloaded by terraform init
 **/.terraform/
 
+**/*.tfvars
 *.tfvars
+infra/envs/dev/dev.tfvars
+infra/envs/prod/prod.tfvars
 
 # Terraform plan binary files
 *.tfplan

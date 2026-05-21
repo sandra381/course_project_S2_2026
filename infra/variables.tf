@@ -26,3 +26,15 @@ variable "app_bucket_prefix" {
   type        = string
   default     = "app-assets"
 }
+
+variable "db_username" {
+  description = "Master username for the RDS database instance"
+  type        = string
+  default     = "admin"
+}
+
+variable "db_password" {
+  description = "Master password for the RDS database instance. Never commit this value"
+  type        = string
+  sensitive   = true
+}

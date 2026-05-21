@@ -13,12 +13,19 @@ override.tf.json
 *_override.tf.json
 
 # Terraform CLI config (contains credentials paths)
+terraform.tfstate
+terraform.tfstate.backup
 .terraformrc
 terraform.rc
 .terraform 
 .terraform.lock.hcl
 # Provider plugins downloaded by terraform init
 **/.terraform/
+
+**/*.tfvars
+*.tfvars
+infra/envs/dev/dev.tfvars
+infra/envs/prod/prod.tfvars
 
 # Terraform plan binary files
 *.tfplan

@@ -40,7 +40,7 @@ jobs:
       # Step 2 — Init (no remote backend)
       # Downloads provider plugins and verifies version constraints resolve.
       - name: Terraform Init
-        run: terraform init -backend=false
+        run: terraform init -reconfigure 
         working-directory: infra/
 
       # Step 3 — Validate

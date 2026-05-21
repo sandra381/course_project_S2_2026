@@ -9,7 +9,7 @@ variable "project_name" {
 }
 
 variable "db_name" {
-  description = "Name of the PostgreSQL database to create inside the RDS instance"
+  description = "Name of MySQL database to create inside the RDS instance"
   type        = string
 }
 

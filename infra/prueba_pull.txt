@@ -1,1 +1,1 @@
-Prueba de funcionamiento del pull request 
+Prueba de funcionamiento del pull request actualizado con nuevos recursos.

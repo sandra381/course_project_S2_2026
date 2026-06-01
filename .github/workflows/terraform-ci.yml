@@ -42,7 +42,7 @@ jobs:
 
       # Step 2 — Init
       - name: Terraform Init
-        run: terraform init -backend=false
+        run: terraform init
         working-directory: infra/
 
       # Step 3 — Validate

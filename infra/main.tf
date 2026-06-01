@@ -73,20 +73,20 @@ module "database" {
 
 # ─── MODULO DE COMPUTO — Lambda API ────────────────────────────────────────────
 module "compute" {
-  source              = "./modules/compute"
-  environment         = var.environment
-  project_name        = var.project_name
-  name                = "api"
-  memory_size         = 512
-  timeout             = 30
-  s3_bucket_arn       = module.storage_files.bucket_arn
-  s3_bucket_name      = module.storage_files.bucket_name
-  db_host             = module.database.db_endpoint
-  db_name             = module.database.db_name
-  db_username         = var.db_username
-  db_password         = var.db_password
-  subnet_ids          = module.network.private_subnet_ids
-  security_group_ids  = [module.network.app_sg_id]
+  source             = "./modules/compute"
+  environment        = var.environment
+  project_name       = var.project_name
+  name               = "api"
+  memory_size        = 512
+  timeout            = 30
+  s3_bucket_arn      = module.storage_files.bucket_arn
+  s3_bucket_name     = module.storage_files.bucket_name
+  db_host            = module.database.db_endpoint
+  db_name            = module.database.db_name
+  db_username        = var.db_username
+  db_password        = var.db_password
+  subnet_ids         = module.network.private_subnet_ids
+  security_group_ids = [module.network.app_sg_id]
 }
 
 # ─── MODULO DE INGRESS — API Gateway ───────────────────────────────────────────

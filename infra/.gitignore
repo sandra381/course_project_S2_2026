@@ -24,8 +24,7 @@ terraform.rc
 
 **/*.tfvars
 *.tfvars
-infra/envs/dev/dev.tfvars
-infra/envs/prod/prod.tfvars
+
 
 # Terraform plan binary files
 *.tfplan

@@ -1,0 +1,24 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"jobs": [{"job_id": 1, "id_usuario": 1, "nombre_archivo": "ventas_abril_2026.csv", "estado": "COMPLETADO", "fecha_carga": "2026-04-01", "csv_s3_key": 
+                    "uploads/ventas_abril_2026.csv"}]}
+RawContent        : HTTP/1.1 200 OK
+                    Connection: keep-alive
+                    Apigw-Requestid: eTWOLgWwoAMEMcw=
+                    Content-Length: 185
+                    Content-Type: application/json
+                    Date: Mon, 01 Jun 2026 22:13:08 GMT
+                    
+                    {"jobs": [{"job_id": 1, "id_usua...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Apigw-Requestid, eTWOLgWwoAMEMcw=], [Content-Length, 185], [Content-Type, application/json]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 185
+
+
+

@@ -9,7 +9,7 @@ resource "aws_s3_bucket" "this" {
   }
 }
 
-# Versionado — guarda historial de cada archivo
+
 resource "aws_s3_bucket_versioning" "this" {
   bucket = aws_s3_bucket.this.id
 
@@ -18,7 +18,7 @@ resource "aws_s3_bucket_versioning" "this" {
   }
 }
 
-# Encriptación — todos los archivos se guardan encriptados
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 
@@ -29,7 +29,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
   }
 }
 
-# Lifecycle rule — mueve archivos a almacenamiento más barato después de 30 días
+
 resource "aws_s3_bucket_lifecycle_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 
@@ -52,7 +52,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
   }
 }
 
-# Bloquear todo acceso público al bucket
+
 resource "aws_s3_bucket_public_access_block" "this" {
   bucket = aws_s3_bucket.this.id
 
@@ -62,7 +62,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
   restrict_public_buckets = true
 }
 
-# Política que fuerza SSL — solo se puede acceder al bucket por HTTPS
+
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
 

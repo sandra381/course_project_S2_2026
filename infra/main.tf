@@ -1,17 +1,16 @@
-# Obtener datos de la VPC default
-data "aws_vpc" "default" {
-  default = true
+# ─── MODULO DE RED ─────────────────────────────────────────────────────────────
+module "network" {
+  source               = "./modules/network"
+  project_name         = var.project_name
+  environment          = var.environment
+  vpc_cidr             = var.vpc_cidr
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  private_subnet_cidrs = var.private_subnet_cidrs
+  availability_zones   = var.availability_zones
+  single_nat_gateway   = var.single_nat_gateway
 }
 
-# Obtener las subnets de la VPC default
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
-
-# Bucket S3 original del Delivery 1
+# ─── BUCKET S3 ORIGINAL DEL DELIVERY 1 ────────────────────────────────────────
 resource "aws_s3_bucket" "app_assets" {
   bucket = "${var.project_name}-${var.app_bucket_prefix}-${var.environment}"
 
@@ -41,18 +40,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "app_assets" {
   }
 }
 
-# Módulo de cómputo — Lambda
-module "compute" {
-  source       = "./modules/compute"
-  environment  = var.environment
-  project_name = var.project_name
-  name         = "file-processor"
-  memory_size  = 512
-  timeout      = 30
-  s3_bucket_arn = module.storage_files.bucket_arn
-}
-
-# Módulo de storage — bucket para archivos CSV
+# ─── MODULO DE STORAGE — bucket para archivos CSV ──────────────────────────────
 module "storage_files" {
   source       = "./modules/storage"
   environment  = var.environment
@@ -60,7 +48,7 @@ module "storage_files" {
   bucket_name  = "files"
 }
 
-# Módulo de storage — bucket para reportes PDF
+# ─── MODULO DE STORAGE — bucket para reportes PDF ─────────────────────────────
 module "storage_reports" {
   source       = "./modules/storage"
   environment  = var.environment
@@ -68,16 +56,45 @@ module "storage_reports" {
   bucket_name  = "reports"
 }
 
-# Módulo de base de datos — RDS MySQL
+# ─── MODULO DE BASE DE DATOS — RDS MySQL ───────────────────────────────────────
 module "database" {
-  source       = "./modules/database"
-  environment  = var.environment
-  project_name = var.project_name
-  db_name      = "spvr"
-  db_username  = var.db_username
-  db_password  = var.db_password
+  source         = "./modules/database"
+  environment    = var.environment
+  project_name   = var.project_name
+  db_name        = "spvr"
+  db_username    = var.db_username
+  db_password    = var.db_password
   instance_class = "db.t3.micro"
-  multi_az     = false
-  subnet_ids   = data.aws_subnets.default.ids
-  vpc_id       = data.aws_vpc.default.id
+  multi_az       = false
+  subnet_ids     = module.network.private_subnet_ids
+  vpc_id         = module.network.vpc_id
+  db_sg_id       = module.network.db_sg_id
+}
+
+# ─── MODULO DE COMPUTO — Lambda API ────────────────────────────────────────────
+module "compute" {
+  source             = "./modules/compute"
+  environment        = var.environment
+  project_name       = var.project_name
+  name               = "api"
+  memory_size        = 512
+  timeout            = 30
+  s3_bucket_arn      = module.storage_files.bucket_arn
+  s3_bucket_name     = module.storage_files.bucket_name
+  db_host            = module.database.db_endpoint
+  db_name            = module.database.db_name
+  db_username        = var.db_username
+  db_password        = var.db_password
+  subnet_ids         = module.network.private_subnet_ids
+  security_group_ids = [module.network.app_sg_id]
+}
+
+# ─── MODULO DE INGRESS — API Gateway ───────────────────────────────────────────
+module "ingress" {
+  source                   = "./modules/ingress"
+  project_name             = var.project_name
+  environment              = var.environment
+  lambda_api_function_name = module.compute.function_name
+  lambda_api_invoke_arn    = module.compute.invoke_arn
+  health_check_path        = var.health_check_path
 }

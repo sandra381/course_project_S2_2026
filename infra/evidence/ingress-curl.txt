@@ -1,0 +1,23 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"status": "ok", "service": "spvr-api"}
+RawContent        : HTTP/1.1 200 OK
+                    Connection: keep-alive
+                    Apigw-Requestid: eTVx7iRmoAMEYMQ=
+                    Content-Length: 39
+                    Content-Type: application/json
+                    Date: Mon, 01 Jun 2026 22:10:07 GMT
+                    
+                    {"status": "ok", "service": "spvr...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Apigw-Requestid, eTVx7iRmoAMEYMQ=], [Content-Length, 39], [Content-Type, application/json]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 39
+
+
+

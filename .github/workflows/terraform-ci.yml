@@ -4,15 +4,20 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
 
 jobs:
-  terraform:
+  # ─── PLAN ON PR ──────────────────────────────────────────────────────────────
+  terraform-plan:
     name: Validate & Plan
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
 
     permissions:
       contents: read
-      pull-requests: write  # Required to post the plan as a PR comment
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -26,40 +31,36 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region:            ${{ secrets.AWS_REGION }}
 
       # Step 1 — Format check
-      # Fails the PR if any .tf file deviates from canonical HCL style.
-      # Fix locally with: terraform fmt -recursive
       - name: Terraform Format Check
         run: terraform fmt --check -recursive
         working-directory: infra/
 
-      # Step 2 — Init (no remote backend)
-      # Downloads provider plugins and verifies version constraints resolve.
+      # Step 2 — Init
       - name: Terraform Init
         run: terraform init -backend=false
         working-directory: infra/
 
       # Step 3 — Validate
-      # Static analysis: catches type errors, missing variables, invalid arguments.
       - name: Terraform Validate
         run: terraform validate
         working-directory: infra/
 
-      # Step 4 — Plan
-      # Generates an execution plan against the AWS API using dev variables.
-      # tee writes output to plan.txt for the comment step.
+      # Step 4 — Plan (incluye network e ingress de D3)
       - name: Terraform Plan
         id: plan
-        run: terraform plan -var-file=envs/dev/dev.tfvars -no-color 2>&1 | tee plan.txt
+        run: |
+          terraform plan \
+            -var-file=envs/dev/dev.tfvars \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -no-color 2>&1 | tee plan.txt
         working-directory: infra/
 
       # Step 5 — Post plan as PR comment
-      # Publishes the full plan in a collapsible <details> block.
-      # Failure here is non-blocking (the plan step already passed).
       - name: Post Plan as PR Comment
         if: always() && steps.plan.outcome != 'skipped'
         uses: actions/github-script@v7
@@ -88,6 +89,40 @@ jobs:
 
             </details>
 
-            > Plan generated from \`infra/envs/dev/dev.tfvars\` on commit \`${{ github.sha }}\``
+            > Plan generado desde \`infra/envs/dev/dev.tfvars\` en commit \`${{ github.sha }}\``
             });
-        continue-on-error: true  
+        continue-on-error: true
+
+  # ─── APPLY ON MERGE ──────────────────────────────────────────────────────────
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra/
+
+      - name: Terraform Apply
+        run: |
+          terraform apply \
+            -var-file=envs/dev/dev.tfvars \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -auto-approve
+        working-directory: infra/

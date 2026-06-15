@@ -67,3 +67,24 @@ output "db_name" {
   description = "Name of the MySQL database."
   value       = module.database.db_name
 }
+
+# ─── OUTPUTS ASYNC  ───────────────────────────────────────────────────────
+output "sqs_queue_url" {
+  description = "URL de la cola SQS principal spvr-jobs-queue."
+  value       = module.async.queue_url
+}
+
+output "sqs_queue_arn" {
+  description = "ARN de la cola SQS principal spvr-jobs-queue."
+  value       = module.async.queue_arn
+}
+
+output "sqs_dlq_url" {
+  description = "URL de la Dead Letter Queue spvr-jobs-dlq."
+  value       = module.async.dlq_url
+}
+
+output "sqs_dlq_arn" {
+  description = "ARN de la Dead Letter Queue spvr-jobs-dlq."
+  value       = module.async.dlq_arn
+}

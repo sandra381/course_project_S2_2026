@@ -1,0 +1,90 @@
+name: Terraform Drift Detection
+
+# ─── CORRE AUTOMATICAMENTE TODOS LOS DIAS ─────────────────────────────────────
+# Detecta si alguien modificó recursos en AWS fuera de Terraform.
+# Si terraform plan devuelve exit code 2 (hay cambios), el job falla
+# y publica el output en el summary para que los graders lo puedan ver.
+on:
+  schedule:
+    - cron: "0 8 * * *"   # Todos los días a las 8am UTC (2am Guatemala)
+  workflow_dispatch:       # También se puede disparar manualmente para probar
+
+jobs:
+  terraform-drift:
+    name: Terraform Drift Detection — dev
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config=envs/dev/backend-dev.hcl
+        working-directory: infra/
+
+      # ── Plan con -detailed-exitcode ───────────────────────────────────────────
+      # Exit code 0 = sin cambios (ok)
+      # Exit code 1 = error
+      # Exit code 2 = hay cambios detectados (drift)
+      - name: Terraform Plan — Drift Check
+        id: plan
+        run: |
+          terraform plan \
+            -var-file=envs/dev/dev.tfvars \
+            -var="db_password=${{ secrets.DEV_DB_PASSWORD }}" \
+            -detailed-exitcode \
+            -no-color 2>&1 | tee drift-plan.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+        working-directory: infra/
+        continue-on-error: true
+
+      # ── Publicar output en el summary de GitHub Actions ───────────────────────
+      # Esto permite que los graders vean qué drifteó sin acceso al repo.
+      - name: Publish Plan to Job Summary
+        run: |
+          echo "## 🔍 Terraform Drift Detection — $(date -u '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ambiente:** dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Exit code:** ${{ steps.plan.outputs.exit_code }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.plan.outputs.exit_code }}" == "2" ]; then
+            echo "⚠️ **DRIFT DETECTADO** — Hay recursos en AWS que no coinciden con el estado de Terraform." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.plan.outputs.exit_code }}" == "0" ]; then
+            echo "✅ **Sin drift** — La infraestructura coincide con el estado de Terraform." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Error** — El plan falló con un error inesperado." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary>Ver plan completo</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```hcl' >> $GITHUB_STEP_SUMMARY
+          cat infra/drift-plan.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+
+      # ── Fallar el job si hay drift ────────────────────────────────────────────
+      - name: Fail if Drift Detected
+        if: steps.plan.outputs.exit_code == '2'
+        run: |
+          echo "❌ Drift detectado en dev. Revisar el summary para ver qué cambió."
+          exit 1

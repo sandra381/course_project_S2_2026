@@ -9,58 +9,77 @@ on:
       - main
 
 jobs:
-  # ─── PLAN ON PR ──────────────────────────────────────────────────────────────
-  terraform-plan:
-    name: Validate & Plan
+  fmt:
+    name: Terraform Format Check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-
-    permissions:
-      contents: read
-      pull-requests: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~> 1.8"
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ secrets.AWS_REGION }}
-
-      # Step 1 — Format check
       - name: Terraform Format Check
         run: terraform fmt --check -recursive
         working-directory: infra/
 
-      # Step 2 — Init
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: fmt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
-
-      # Step 3 — Validate
       - name: Terraform Validate
         run: terraform validate
         working-directory: infra/
 
-      # Step 4 — Plan (incluye network e ingress de D3)
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: validate
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+      - name: Terraform Init
+        run: terraform init -backend-config=envs/dev/backend-dev.hcl
+        working-directory: infra/
       - name: Terraform Plan
         id: plan
         run: |
           terraform plan \
             -var-file=envs/dev/dev.tfvars \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="db_password=${{ secrets.DEV_DB_PASSWORD }}" \
+            -out=tfplan \
             -no-color 2>&1 | tee plan.txt
         working-directory: infra/
-
-      # Step 5 — Post plan as PR comment
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.sha }}
+          path: infra/tfplan
+          retention-days: 5
       - name: Post Plan as PR Comment
         if: always() && steps.plan.outcome != 'skipped'
         uses: actions/github-script@v7
@@ -71,58 +90,72 @@ jobs:
             const truncated = plan.length > 60000
               ? plan.substring(0, 60000) + '\n\n... [output truncated] ...'
               : plan;
-
             const outcome = '${{ steps.plan.outcome }}';
             const icon = outcome === 'success' ? '✅' : '❌';
-
             github.rest.issues.createComment({
               ...context.repo,
               issue_number: context.issue.number,
-              body: `## ${icon} Terraform Plan — \`${outcome}\`
-
-            <details>
-            <summary>Click to expand full plan output</summary>
-
-            \`\`\`hcl
-            ${truncated}
-            \`\`\`
-
-            </details>
-
-            > Plan generado desde \`infra/envs/dev/dev.tfvars\` en commit \`${{ github.sha }}\``
+              body: `## ${icon} Terraform Plan — \`${outcome}\`\n\n<details>\n<summary>Click to expand full plan output</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n\n</details>\n\n> Plan generado desde \`infra/envs/dev/dev.tfvars\` en commit \`${{ github.sha }}\``
             });
         continue-on-error: true
 
-  # ─── APPLY ON MERGE ──────────────────────────────────────────────────────────
-  terraform-apply:
-    name: Terraform Apply
+  terraform-apply-dev:
+    name: Terraform Apply — dev
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
+    environment: dev
+    permissions:
+      contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~> 1.8"
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ secrets.AWS_REGION }}
-
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -backend-config=envs/dev/backend-dev.hcl
+        working-directory: infra/
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ github.sha }}
+          path: infra/
+      - name: Terraform Apply
+        run: terraform apply tfplan
         working-directory: infra/
 
-      - name: Terraform Apply
+  terraform-apply-staging:
+    name: Terraform Apply — staging
+    runs-on: ubuntu-latest
+    needs: terraform-apply-dev
+    environment: staging
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+      - name: Terraform Init
+        run: terraform init -backend-config=envs/staging/backend-staging.hcl
+        working-directory: infra/
+      - name: Terraform Plan — staging
         run: |
-          terraform apply \
-            -var-file=envs/dev/dev.tfvars \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
-            -auto-approve
+          terraform plan \
+            -var-file=envs/staging/staging.tfvars \
+            -var="db_password=${{ secrets.STAGING_DB_PASSWORD }}" \
+            -out=tfplan-staging \
+            -no-color
+        working-directory: infra/
+      - name: Terraform Apply — staging
+        run: terraform apply tfplan-staging
         working-directory: infra/

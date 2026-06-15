@@ -93,6 +93,9 @@ export const getReportDownloadUrl = (reportId) =>
 export const postReport = (data) =>
   request("POST", "/reports", data);
 
+export const enqueueJob = (jobId, idUsuario) =>
+  request("POST", "/jobs/enqueue", { job_id: jobId, id_usuario: idUsuario });
+
 // ─────────────────────────────────────────────────────────────
 // ERRORES
 // ─────────────────────────────────────────────────────────────

@@ -39,7 +39,7 @@ variable "db_password" {
   sensitive   = true
 }
 
-# ─── VARIABLES DE RED (D3) ─────────────────────────────────────────────────────
+# ─── VARIABLES DE RED  ─────────────────────────────────────────────────────
 
 variable "vpc_cidr" {
   description = "CIDR block for the VPC."
@@ -75,4 +75,75 @@ variable "health_check_path" {
   description = "Path used for health checks on the API Gateway."
   type        = string
   default     = "/"
+}
+
+# ─── VARIABLES ASYNC  ─────────────────────────────────────────────────────
+
+variable "queue_name_prefix" {
+  description = "Prefijo para las colas SQS. Genera queue_name_prefix-queue y queue_name_prefix-dlq."
+  type        = string
+  default     = "spvr-jobs"
+}
+
+variable "visibility_timeout_seconds" {
+  description = "Segundos que un mensaje es invisible mientras Lambda Worker lo procesa. Igual a 60s según decisión del documento E4 de Infra."
+  type        = number
+  default     = 60
+}
+
+variable "message_retention_seconds" {
+  description = "Segundos que la cola principal retiene mensajes no procesados. 86400 = 1 día."
+  type        = number
+  default     = 86400
+}
+
+variable "max_receive_count" {
+  description = "Reintentos máximos antes de mover un mensaje a la DLQ. 3 según decisión del documento E4 de Infra."
+  type        = number
+  default     = 3
+}
+
+variable "dlq_message_retention_seconds" {
+  description = "Segundos que la DLQ retiene mensajes fallidos. 1209600 = 14 días para que el administrador los inspeccione."
+  type        = number
+  default     = 1209600
+}
+
+# ─── VARIABLES EVENT SOURCE MAPPING ──────────────────────────────────────
+variable "batch_size" {
+  description = "Mensajes que Lambda Worker procesa por invocación desde SQS."
+  type        = number
+  default     = 1
+}
+
+variable "maximum_batching_window_in_seconds" {
+  description = "Segundos que AWS espera para acumular mensajes antes de invocar Lambda Worker."
+  type        = number
+  default     = 0
+}
+
+variable "bisect_batch_on_function_error" {
+  description = "Si Lambda Worker falla, divide el batch a la mitad para aislar el mensaje problemático."
+  type        = bool
+  default     = true
+}
+
+# ─── VARIABLES SCHEDULER  ─────────────────────────────────────────────────
+
+variable "schedule_expression" {
+  description = "Expresión de horario para EventBridge Scheduler. rate(1 hour) ejecuta Lambda Cleanup cada hora."
+  type        = string
+  default     = "rate(1 hour)"
+}
+
+variable "scheduler_timezone" {
+  description = "Zona horaria para la expresión cron del scheduler."
+  type        = string
+  default     = "America/Guatemala"
+}
+
+variable "stale_hours" {
+  description = "Horas máximas que un job puede estar en PENDIENTE o PROCESANDO antes de marcarse FALLIDO."
+  type        = number
+  default     = 2
 }

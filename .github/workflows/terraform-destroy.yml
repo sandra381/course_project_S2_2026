@@ -1,0 +1,102 @@
+name: Terraform Destroy
+
+# ─── SOLO MANUAL ──────────────────────────────────────────────────────────────
+# Este workflow NUNCA corre automáticamente.
+# Solo se dispara desde Actions → Terraform Destroy → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Ambiente a destruir (dev o staging)"
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+
+jobs:
+  terraform-destroy-dev:
+    name: Terraform Destroy — dev
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'dev'
+    environment: dev
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Confirm Destroy Target
+        run: |
+          echo "Destroying environment: dev"
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config=envs/dev/backend-dev.hcl
+        working-directory: infra/
+
+      - name: Terraform Destroy
+        run: |
+          terraform destroy \
+            -var-file=envs/dev/dev.tfvars \
+            -var="db_password=${{ secrets.DEV_DB_PASSWORD }}" \
+            -auto-approve
+        working-directory: infra/
+
+  terraform-destroy-staging:
+    name: Terraform Destroy — staging
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging'
+    environment: staging
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Confirm Destroy Target
+        run: |
+          echo "Destroying environment: staging"
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config=envs/staging/backend-staging.hcl
+        working-directory: infra/
+
+      - name: Terraform Destroy
+        run: |
+          terraform destroy \
+            -var-file=envs/staging/staging.tfvars \
+            -var="db_password=${{ secrets.STAGING_DB_PASSWORD }}" \
+            -auto-approve
+        working-directory: infra/

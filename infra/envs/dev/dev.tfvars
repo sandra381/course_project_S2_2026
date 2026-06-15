@@ -9,3 +9,17 @@ private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
 availability_zones   = ["us-east-1a", "us-east-1b"]
 single_nat_gateway   = true
 health_check_path    = "/"
+
+queue_name_prefix             = "spvr-jobs"
+visibility_timeout_seconds    = 60
+message_retention_seconds     = 86400
+max_receive_count             = 3
+dlq_message_retention_seconds = 1209600
+
+batch_size                         = 1
+maximum_batching_window_in_seconds = 0
+bisect_batch_on_function_error     = true
+
+schedule_expression = "rate(1 hour)"
+scheduler_timezone  = "America/Guatemala"
+stale_hours         = 2

@@ -103,13 +103,15 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      ENVIRONMENT    = var.environment
-      PROJECT        = var.project_name
-      S3_BUCKET_NAME = var.s3_bucket_name
-      DB_HOST        = var.db_host
-      DB_NAME        = var.db_name
-      DB_USER        = var.db_username
-      DB_PASSWORD    = var.db_password
+      ENVIRONMENT       = var.environment
+      PROJECT           = var.project_name
+      S3_BUCKET_NAME    = var.s3_bucket_name
+      S3_REPORTS_BUCKET = var.s3_reports_bucket_name
+      SQS_QUEUE_URL     = var.sqs_queue_url
+      DB_HOST           = var.db_host
+      DB_NAME           = var.db_name
+      DB_USER           = var.db_username
+      DB_PASSWORD       = var.db_password
     }
   }
 
@@ -119,6 +121,13 @@ resource "aws_lambda_function" "api" {
     Project     = var.project_name
     ManagedBy   = "terraform"
   }
+}
+
+resource "aws_lambda_layer_version" "reportlab" {
+  filename            = "${path.module}/reportlab_layer.zip"
+  layer_name          = "${var.project_name}-${var.environment}-reportlab"
+  compatible_runtimes = ["python3.12"]
+  description         = "reportlab y pandas para generacion de PDFs en Lambda Worker"
 }
 
 # ─── LAMBDA WORKER ─────────────────────────────────────────────────────────────
@@ -131,6 +140,11 @@ resource "aws_lambda_function" "worker" {
   timeout          = var.timeout
   filename         = data.archive_file.lambda_worker_zip.output_path
   source_code_hash = data.archive_file.lambda_worker_zip.output_base64sha256
+
+  layers = [
+    aws_lambda_layer_version.pymysql.arn,
+    aws_lambda_layer_version.reportlab.arn
+  ]
 
   vpc_config {
     subnet_ids         = var.subnet_ids
@@ -155,4 +169,34 @@ resource "aws_lambda_function" "worker" {
     Project     = var.project_name
     ManagedBy   = "terraform"
   }
+}
+
+# ─── IAM POLICY — SQS ────────────────────────────────────────────────────
+resource "aws_iam_role_policy" "lambda_sqs" {
+  name = "${var.project_name}-${var.environment}-lambda-sqs-policy"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = var.sqs_queue_arn
+      }
+    ]
+  })
+}
+
+# ─── EVENT SOURCE MAPPING — SQS → Lambda Worker  ─────────────────────────
+resource "aws_lambda_event_source_mapping" "sqs_worker" {
+  event_source_arn                   = var.sqs_queue_arn
+  function_name                      = aws_lambda_function.worker.arn
+  batch_size                         = var.batch_size
+  maximum_batching_window_in_seconds = var.maximum_batching_window_in_seconds
+  enabled                            = true
 }

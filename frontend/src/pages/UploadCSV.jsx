@@ -3,7 +3,7 @@ import { C } from "../styles.js";
 import Card from "../components/Card.jsx";
 import Button from "../components/Button.jsx";
 import Spinner from "../components/Spinner.jsx";
-import { createUpload, uploadFileToS3, IS_DEMO } from "../api/client.js";
+import { createUpload, uploadFileToS3, enqueueJob, IS_DEMO } from "../api/client.js";
 
 const REQUIRED_COLUMNS = [
   "sale_id", "sale_date", "product_name", "quantity",
@@ -73,9 +73,11 @@ export default function UploadCSV({ user, setPage, setSelectedJob }) {
       } else {
         // Modo real:
         // 2. Pedir presigned URL al API Gateway
+
         const { upload_url, job_id, s3_key } = await createUpload(file.name, user.id);
         // 3. Subir archivo directo a S3 con la presigned URL
         await uploadFileToS3(upload_url, file);
+        await enqueueJob(job_id, user?.id || 1); 
         job = { job_id, nombre_archivo: file.name, estado: "PROCESANDO", fecha_carga: new Date().toISOString() };
       }
 

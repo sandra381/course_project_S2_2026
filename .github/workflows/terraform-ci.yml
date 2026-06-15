@@ -10,8 +10,11 @@ on:
 
 jobs:
   # ─── PLAN ON PR ──────────────────────────────────────────────────────────────
+  # Corre en cada PR abierto contra main.
+  # Genera el plan, lo guarda como artifact y lo comenta en el PR.
+  # El apply NO vuelve a planear — descarga este mismo artifact.
   terraform-plan:
-    name: Validate & Plan
+    name: Terraform Plan
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -35,32 +38,45 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ secrets.AWS_REGION }}
 
-      # Step 1 — Format check
+      # ── Step 1: fmt ──────────────────────────────────────────────────────────
       - name: Terraform Format Check
         run: terraform fmt --check -recursive
         working-directory: infra/
 
-      # Step 2 — Init
+      # ── Step 2: init con backend de dev ──────────────────────────────────────
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
 
-      # Step 3 — Validate
+      # ── Step 3: validate ─────────────────────────────────────────────────────
       - name: Terraform Validate
         run: terraform validate
         working-directory: infra/
 
-      # Step 4 — Plan (incluye network e ingress de D3)
+      # ── Step 4: plan — genera tfplan y lo guarda como archivo ─────────────────
       - name: Terraform Plan
         id: plan
         run: |
           terraform plan \
             -var-file=envs/dev/dev.tfvars \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="db_password=${{ secrets.DEV_DB_PASSWORD }}" \
+            -out=tfplan \
             -no-color 2>&1 | tee plan.txt
         working-directory: infra/
 
-      # Step 5 — Post plan as PR comment
+      # ── Step 5: subir tfplan como artifact ───────────────────────────────────
+      # El artifact se nombra con el SHA del commit para que el apply
+      # descargue exactamente el plan que se revisó en este PR.
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.sha }}
+          path: infra/tfplan
+          retention-days: 5
+
+      # ── Step 6: comentar el plan en el PR ────────────────────────────────────
       - name: Post Plan as PR Comment
         if: always() && steps.plan.outcome != 'skipped'
         uses: actions/github-script@v7
@@ -93,11 +109,18 @@ jobs:
             });
         continue-on-error: true
 
-  # ─── APPLY ON MERGE ──────────────────────────────────────────────────────────
-  terraform-apply:
-    name: Terraform Apply
+  # ─── APPLY DEV ───────────────────────────────────────────────────────────────
+  # Corre automáticamente al hacer merge a main.
+  # Declara environment: dev — usa DEV_DB_PASSWORD del ambiente dev.
+  # Descarga el tfplan del PR — NO vuelve a planear.
+  terraform-apply-dev:
+    name: Terraform Apply — dev
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: dev
+
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -116,13 +139,70 @@ jobs:
           aws-region:            ${{ secrets.AWS_REGION }}
 
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
 
+      # ── Descarga el artifact exacto generado en el plan del PR ────────────────
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ github.sha }}
+          path: infra/
+
+      # ── Apply usa el tfplan guardado, no re-planea ────────────────────────────
       - name: Terraform Apply
+        run: terraform apply tfplan
+        working-directory: infra/
+
+  # ─── APPLY STAGING ───────────────────────────────────────────────────────────
+  # Corre después de que dev aplica exitosamente (needs: terraform-apply-dev).
+  # Declara environment: staging — GitHub pausa y pide aprobación del reviewer.
+  # Usa staging.tfvars y STAGING_DB_PASSWORD del ambiente staging.
+  terraform-apply-staging:
+    name: Terraform Apply — staging
+    runs-on: ubuntu-latest
+    needs: terraform-apply-dev
+    environment: staging
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.8"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      # ── Init con backend separado de staging ──────────────────────────────────
+      - name: Terraform Init
         run: |
-          terraform apply \
-            -var-file=envs/dev/dev.tfvars \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
-            -auto-approve
+          terraform init \
+            -backend-config=envs/staging/backend-staging.hcl
+        working-directory: infra/
+
+      # ── Staging planea con sus propios tfvars ─────────────────────────────────
+      - name: Terraform Plan — staging
+        run: |
+          terraform plan \
+            -var-file=envs/staging/staging.tfvars \
+            -var="db_password=${{ secrets.STAGING_DB_PASSWORD }}" \
+            -out=tfplan-staging \
+            -no-color
+        working-directory: infra/
+
+      # ── Apply usa el plan de staging ──────────────────────────────────────────
+      - name: Terraform Apply — staging
+        run: terraform apply tfplan-staging
         working-directory: infra/

@@ -27,3 +27,13 @@ output "worker_function_name" {
   description = "Name of the Lambda Worker function."
   value       = aws_lambda_function.worker.function_name
 }
+
+output "pymysql_layer_arn" {
+  description = "ARN del Lambda Layer de pymysql. Se pasa al módulo scheduler para reutilizarlo sin duplicar el layer."
+  value       = aws_lambda_layer_version.pymysql.arn
+}
+
+output "reportlab_layer_arn" {
+  description = "ARN del Lambda Layer de reportlab y pandas."
+  value       = aws_lambda_layer_version.reportlab.arn
+}

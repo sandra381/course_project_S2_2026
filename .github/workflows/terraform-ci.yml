@@ -9,6 +9,7 @@ on:
       - main
 
 jobs:
+  # ─── JOB 1: FORMAT CHECK ─────────────────────────────────────────────────────
   fmt:
     name: Terraform Format Check
     runs-on: ubuntu-latest
@@ -22,6 +23,7 @@ jobs:
         run: terraform fmt --check -recursive
         working-directory: infra/
 
+  # ─── JOB 2: VALIDATE ─────────────────────────────────────────────────────────
   validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
@@ -44,6 +46,7 @@ jobs:
         run: terraform validate
         working-directory: infra/
 
+  # ─── JOB 3: PLAN ─────────────────────────────────────────────────────────────
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
@@ -74,12 +77,15 @@ jobs:
             -out=tfplan \
             -no-color 2>&1 | tee plan.txt
         working-directory: infra/
+
+      # Nombre fijo para que el apply de dev lo encuentre siempre
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-${{ github.sha }}
+          name: tfplan-dev
           path: infra/tfplan
           retention-days: 5
+
       - name: Post Plan as PR Comment
         if: always() && steps.plan.outcome != 'skipped'
         uses: actions/github-script@v7
@@ -99,6 +105,9 @@ jobs:
             });
         continue-on-error: true
 
+  # ─── APPLY DEV ───────────────────────────────────────────────────────────────
+  # Corre automáticamente al hacer merge a main.
+  # Descarga el tfplan generado en el PR — NO vuelve a planear.
   terraform-apply-dev:
     name: Terraform Apply — dev
     runs-on: ubuntu-latest
@@ -122,12 +131,14 @@ jobs:
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: tfplan-${{ github.sha }}
+          name: tfplan-dev
           path: infra/
       - name: Terraform Apply
         run: terraform apply tfplan
         working-directory: infra/
 
+  # ─── APPLY STAGING ───────────────────────────────────────────────────────────
+  # Corre después de dev. GitHub pausa y pide aprobación del reviewer.
   terraform-apply-staging:
     name: Terraform Apply — staging
     runs-on: ubuntu-latest

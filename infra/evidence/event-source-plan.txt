@@ -1,77 +1,1746 @@
-﻿Acquiring state lock. This may take a few moments...
-module.scheduler.data.archive_file.lambda_cleanup_zip: Reading...
+﻿module.scheduler.data.archive_file.lambda_cleanup_zip: Reading...
 module.compute.data.archive_file.lambda_api_zip: Reading...
 module.compute.data.archive_file.lambda_worker_zip: Reading...
 module.scheduler.data.archive_file.lambda_cleanup_zip: Read complete after 0s [id=35ba29b8b269938fe02f1af5bdb2cca4083f4861]
-module.compute.data.archive_file.lambda_worker_zip: Read complete after 0s [id=c910ac2be7bd15b3bd498c45be11545036b4f344]
 module.compute.data.archive_file.lambda_api_zip: Read complete after 0s [id=b58a3479fdc3a1d6335f7d773164e22087419d32]
-module.database.aws_db_parameter_group.this: Refreshing state... [id=oyd-project-dev-mysql8]
-module.scheduler.aws_iam_role.cleanup_exec: Refreshing state... [id=oyd-project-dev-cleanup-role]
-module.compute.aws_lambda_layer_version.pymysql: Refreshing state... [id=arn:aws:lambda:us-east-1:121218949493:layer:oyd-project-dev-pymysql:3]
-module.scheduler.aws_iam_role.scheduler_exec: Refreshing state... [id=oyd-project-dev-scheduler-role]
-module.async.aws_sqs_queue.dlq: Refreshing state... [id=https://sqs.us-east-1.amazonaws.com/121218949493/spvr-jobs-dlq]
-module.ingress.aws_apigatewayv2_api.this: Refreshing state... [id=jr0aj3lb2l]
-module.compute.aws_iam_role.lambda_exec: Refreshing state... [id=oyd-project-dev-lambda-role]
-aws_s3_bucket.app_assets: Refreshing state... [id=oyd-project-app-assets-dev]
-module.storage_files.aws_s3_bucket.this: Refreshing state... [id=oyd-project-dev-files]
-module.storage_reports.aws_s3_bucket.this: Refreshing state... [id=oyd-project-dev-reports]
-module.compute.aws_lambda_layer_version.reportlab: Refreshing state... [id=arn:aws:lambda:us-east-1:121218949493:layer:oyd-project-dev-reportlab:1]
-module.network.aws_vpc.this: Refreshing state... [id=vpc-03c4295f515bed4d6]
-module.ingress.aws_apigatewayv2_stage.default: Refreshing state... [id=$default]
-module.async.aws_sqs_queue.main: Refreshing state... [id=https://sqs.us-east-1.amazonaws.com/121218949493/spvr-jobs-queue]
-module.scheduler.aws_iam_role_policy_attachment.cleanup_vpc: Refreshing state... [id=oyd-project-dev-cleanup-role-20260615221502711000000002]
-module.compute.aws_iam_role_policy_attachment.lambda_vpc: Refreshing state... [id=oyd-project-dev-lambda-role-20260615221502680900000001]
-module.compute.aws_iam_role_policy.lambda_sqs: Refreshing state... [id=oyd-project-dev-lambda-role:oyd-project-dev-lambda-sqs-policy]
-module.storage_files.aws_s3_bucket_public_access_block.this: Refreshing state... [id=oyd-project-dev-files]
-module.storage_files.aws_s3_bucket_versioning.this: Refreshing state... [id=oyd-project-dev-files]
-module.compute.aws_iam_role_policy.lambda_s3: Refreshing state... [id=oyd-project-dev-lambda-role:oyd-project-dev-lambda-s3-policy]
-module.storage_files.aws_s3_bucket_server_side_encryption_configuration.this: Refreshing state... [id=oyd-project-dev-files]
-module.storage_files.aws_s3_bucket_cors_configuration.this: Refreshing state... [id=oyd-project-dev-files]
-module.storage_files.aws_s3_bucket_lifecycle_configuration.this: Refreshing state... [id=oyd-project-dev-files]
-module.storage_reports.aws_s3_bucket_versioning.this: Refreshing state... [id=oyd-project-dev-reports]
-module.storage_reports.aws_s3_bucket_public_access_block.this: Refreshing state... [id=oyd-project-dev-reports]
-module.storage_reports.aws_s3_bucket_server_side_encryption_configuration.this: Refreshing state... [id=oyd-project-dev-reports]
-module.storage_reports.aws_s3_bucket_cors_configuration.this: Refreshing state... [id=oyd-project-dev-reports]
-module.storage_reports.aws_s3_bucket_lifecycle_configuration.this: Refreshing state... [id=oyd-project-dev-reports]
-aws_s3_bucket_versioning.app_assets: Refreshing state... [id=oyd-project-app-assets-dev]
-aws_s3_bucket_server_side_encryption_configuration.app_assets: Refreshing state... [id=oyd-project-app-assets-dev]
-module.storage_reports.aws_s3_bucket_policy.this: Refreshing state... [id=oyd-project-dev-reports]
-module.storage_files.aws_s3_bucket_policy.this: Refreshing state... [id=oyd-project-dev-files]
-module.network.aws_internet_gateway.this: Refreshing state... [id=igw-07ed849515fa074db]
-module.network.aws_security_group.db_sg: Refreshing state... [id=sg-06fab565a3751866a]
-module.network.aws_security_group.web_sg: Refreshing state... [id=sg-0001eedab3f4be8c6]
-module.network.aws_security_group.app_sg: Refreshing state... [id=sg-0a2c1edd6de4c7750]
-module.network.aws_subnet.private[0]: Refreshing state... [id=subnet-04e97200eabc676f1]
-module.network.aws_subnet.private[1]: Refreshing state... [id=subnet-01b6ac356588d9510]
-module.network.aws_subnet.public[1]: Refreshing state... [id=subnet-0303ddd5a87974711]
-module.network.aws_subnet.public[0]: Refreshing state... [id=subnet-04a98ef44be336c2a]
-module.network.aws_route_table.public: Refreshing state... [id=rtb-013b955e361ea8914]
-module.network.aws_eip.nat[0]: Refreshing state... [id=eipalloc-095625757dfdb83af]
-module.network.aws_security_group_rule.db_ingress_from_app: Refreshing state... [id=sgrule-1156883486]
-module.network.aws_security_group_rule.app_ingress_from_web: Refreshing state... [id=sgrule-651797392]
-module.network.aws_network_acl.private: Refreshing state... [id=acl-0ff27faeddd4af593]
-module.database.aws_db_subnet_group.this: Refreshing state... [id=oyd-project-dev-subnet-group]
-module.network.aws_network_acl.public: Refreshing state... [id=acl-04ef4be5634877a26]
-module.network.aws_route_table_association.public[0]: Refreshing state... [id=rtbassoc-0b254e7985ccd5322]
-module.network.aws_route_table_association.public[1]: Refreshing state... [id=rtbassoc-0c09463e1889e7468]
-module.network.aws_nat_gateway.this[0]: Refreshing state... [id=nat-0c33ee68cf278a753]
-module.network.aws_route_table.private[0]: Refreshing state... [id=rtb-00a4c3efa8e86ed6a]
-module.database.aws_db_instance.this: Refreshing state... [id=db-XBO25UXTSOQDOXPIFTJKOOT2W4]
-module.network.aws_route_table_association.private[0]: Refreshing state... [id=rtbassoc-0449e65bc7afa0185]
-module.network.aws_route_table_association.private[1]: Refreshing state... [id=rtbassoc-07c878293e41e7778]
-module.scheduler.aws_lambda_function.cleanup: Refreshing state... [id=oyd-project-dev-cleanup]
-module.compute.aws_lambda_function.api: Refreshing state... [id=oyd-project-dev-api]
-module.compute.aws_lambda_function.worker: Refreshing state... [id=oyd-project-dev-worker]
-module.scheduler.aws_iam_role_policy.scheduler_invoke: Refreshing state... [id=oyd-project-dev-scheduler-role:oyd-project-dev-scheduler-invoke-policy]
-module.scheduler.aws_scheduler_schedule.cleanup: Refreshing state... [id=default/oyd-project-dev-cleanup-schedule]
-module.compute.aws_lambda_event_source_mapping.sqs_worker: Refreshing state... [id=2a6bb0e7-47ff-465c-915d-e1db7aeaaea6]
-module.ingress.aws_lambda_permission.api_gw: Refreshing state... [id=AllowAPIGatewayInvoke]
-module.ingress.aws_apigatewayv2_integration.lambda: Refreshing state... [id=l40el18]
-module.ingress.aws_apigatewayv2_route.root: Refreshing state... [id=r7eqc76]
-module.ingress.aws_apigatewayv2_route.post: Refreshing state... [id=etkwbmn]
-module.ingress.aws_apigatewayv2_route.get: Refreshing state... [id=5rnsijj]
+module.compute.data.archive_file.lambda_worker_zip: Read complete after 0s [id=c910ac2be7bd15b3bd498c45be11545036b4f344]
 
-No changes. Your infrastructure matches the configuration.
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
 
-Terraform has compared your real infrastructure against your configuration
-and found no differences, so no changes are needed.
+Terraform will perform the following actions:
+
+  # aws_s3_bucket.app_assets will be created
+  + resource "aws_s3_bucket" "app_assets" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = "oyd-project-app-assets-dev"
+      + bucket_domain_name          = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = false
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = (known after apply)
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-app-assets-dev"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                    = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-app-assets-dev"
+          + "Project"     = "oyd-project"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # aws_s3_bucket_server_side_encryption_configuration.app_assets will be created
+  + resource "aws_s3_bucket_server_side_encryption_configuration" "app_assets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + rule {
+          + apply_server_side_encryption_by_default {
+              + sse_algorithm     = "AES256"
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # aws_s3_bucket_versioning.app_assets will be created
+  + resource "aws_s3_bucket_versioning" "app_assets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + versioning_configuration {
+          + mfa_delete = (known after apply)
+          + status     = "Enabled"
+        }
+    }
+
+  # module.async.aws_sqs_queue.dlq will be created
+  + resource "aws_sqs_queue" "dlq" {
+      + arn                               = (known after apply)
+      + content_based_deduplication       = false
+      + deduplication_scope               = (known after apply)
+      + delay_seconds                     = 0
+      + fifo_queue                        = false
+      + fifo_throughput_limit             = (known after apply)
+      + id                                = (known after apply)
+      + kms_data_key_reuse_period_seconds = (known after apply)
+      + max_message_size                  = 262144
+      + message_retention_seconds         = 1209600
+      + name                              = "spvr-jobs-dlq"
+      + name_prefix                       = (known after apply)
+      + policy                            = (known after apply)
+      + receive_wait_time_seconds         = 0
+      + redrive_allow_policy              = (known after apply)
+      + redrive_policy                    = (known after apply)
+      + sqs_managed_sse_enabled           = (known after apply)
+      + tags                              = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "spvr-jobs-dlq"
+        }
+      + tags_all                          = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "spvr-jobs-dlq"
+        }
+      + url                               = (known after apply)
+      + visibility_timeout_seconds        = 30
+    }
+
+  # module.async.aws_sqs_queue.main will be created
+  + resource "aws_sqs_queue" "main" {
+      + arn                               = (known after apply)
+      + content_based_deduplication       = false
+      + deduplication_scope               = (known after apply)
+      + delay_seconds                     = 0
+      + fifo_queue                        = false
+      + fifo_throughput_limit             = (known after apply)
+      + id                                = (known after apply)
+      + kms_data_key_reuse_period_seconds = (known after apply)
+      + max_message_size                  = 262144
+      + message_retention_seconds         = 86400
+      + name                              = "spvr-jobs-queue"
+      + name_prefix                       = (known after apply)
+      + policy                            = (known after apply)
+      + receive_wait_time_seconds         = 0
+      + redrive_allow_policy              = (known after apply)
+      + redrive_policy                    = (known after apply)
+      + sqs_managed_sse_enabled           = (known after apply)
+      + tags                              = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "spvr-jobs-queue"
+        }
+      + tags_all                          = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "spvr-jobs-queue"
+        }
+      + url                               = (known after apply)
+      + visibility_timeout_seconds        = 60
+    }
+
+  # module.compute.aws_iam_role.lambda_exec will be created
+  + resource "aws_iam_role" "lambda_exec" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "lambda.amazonaws.com"
+                        }
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "oyd-project-dev-lambda-role"
+      + name_prefix           = (known after apply)
+      + path                  = "/"
+      + tags                  = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-lambda-role"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all              = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-lambda-role"
+          + "Project"     = "oyd-project"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # module.compute.aws_iam_role_policy.lambda_s3 will be created
+  + resource "aws_iam_role_policy" "lambda_s3" {
+      + id          = (known after apply)
+      + name        = "oyd-project-dev-lambda-s3-policy"
+      + name_prefix = (known after apply)
+      + policy      = (known after apply)
+      + role        = (known after apply)
+    }
+
+  # module.compute.aws_iam_role_policy.lambda_sqs will be created
+  + resource "aws_iam_role_policy" "lambda_sqs" {
+      + id          = (known after apply)
+      + name        = "oyd-project-dev-lambda-sqs-policy"
+      + name_prefix = (known after apply)
+      + policy      = (known after apply)
+      + role        = (known after apply)
+    }
+
+  # module.compute.aws_iam_role_policy_attachment.lambda_vpc will be created
+  + resource "aws_iam_role_policy_attachment" "lambda_vpc" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      + role       = "oyd-project-dev-lambda-role"
+    }
+
+  # module.compute.aws_lambda_event_source_mapping.sqs_worker will be created
+  + resource "aws_lambda_event_source_mapping" "sqs_worker" {
+      + arn                                = (known after apply)
+      + batch_size                         = 3
+      + bisect_batch_on_function_error     = true
+      + enabled                            = true
+      + event_source_arn                   = (known after apply)
+      + function_arn                       = (known after apply)
+      + function_name                      = (known after apply)
+      + id                                 = (known after apply)
+      + last_modified                      = (known after apply)
+      + last_processing_result             = (known after apply)
+      + maximum_batching_window_in_seconds = 0
+      + maximum_record_age_in_seconds      = (known after apply)
+      + maximum_retry_attempts             = (known after apply)
+      + parallelization_factor             = (known after apply)
+      + state                              = (known after apply)
+      + state_transition_reason            = (known after apply)
+      + tags_all                           = (known after apply)
+      + uuid                               = (known after apply)
+
+      + amazon_managed_kafka_event_source_config (known after apply)
+
+      + self_managed_kafka_event_source_config (known after apply)
+    }
+
+  # module.compute.aws_lambda_function.api will be created
+  + resource "aws_lambda_function" "api" {
+      + architectures                  = (known after apply)
+      + arn                            = (known after apply)
+      + code_sha256                    = (known after apply)
+      + filename                       = "modules/compute/lambda_api.zip"
+      + function_name                  = "oyd-project-dev-api"
+      + handler                        = "handler_api.handler"
+      + id                             = (known after apply)
+      + invoke_arn                     = (known after apply)
+      + last_modified                  = (known after apply)
+      + layers                         = (known after apply)
+      + memory_size                    = 512
+      + package_type                   = "Zip"
+      + publish                        = false
+      + qualified_arn                  = (known after apply)
+      + qualified_invoke_arn           = (known after apply)
+      + reserved_concurrent_executions = -1
+      + role                           = (known after apply)
+      + runtime                        = "python3.12"
+      + signing_job_arn                = (known after apply)
+      + signing_profile_version_arn    = (known after apply)
+      + skip_destroy                   = false
+      + source_code_hash               = "85PAfFAw0WSw1SwhAj45mD2TL6TC1H+NeEqDOj5phko="
+      + source_code_size               = (known after apply)
+      + tags                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-api"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-api"
+          + "Project"     = "oyd-project"
+        }
+      + timeout                        = 30
+      + version                        = (known after apply)
+
+      + environment {
+          + variables = (known after apply)
+        }
+
+      + ephemeral_storage (known after apply)
+
+      + logging_config (known after apply)
+
+      + tracing_config (known after apply)
+
+      + vpc_config {
+          + ipv6_allowed_for_dual_stack = false
+          + security_group_ids          = (known after apply)
+          + subnet_ids                  = (known after apply)
+          + vpc_id                      = (known after apply)
+        }
+    }
+
+  # module.compute.aws_lambda_function.worker will be created
+  + resource "aws_lambda_function" "worker" {
+      + architectures                  = (known after apply)
+      + arn                            = (known after apply)
+      + code_sha256                    = (known after apply)
+      + filename                       = "modules/compute/lambda_worker.zip"
+      + function_name                  = "oyd-project-dev-worker"
+      + handler                        = "handler_worker.handler"
+      + id                             = (known after apply)
+      + invoke_arn                     = (known after apply)
+      + last_modified                  = (known after apply)
+      + layers                         = (known after apply)
+      + memory_size                    = 512
+      + package_type                   = "Zip"
+      + publish                        = false
+      + qualified_arn                  = (known after apply)
+      + qualified_invoke_arn           = (known after apply)
+      + reserved_concurrent_executions = -1
+      + role                           = (known after apply)
+      + runtime                        = "python3.12"
+      + signing_job_arn                = (known after apply)
+      + signing_profile_version_arn    = (known after apply)
+      + skip_destroy                   = false
+      + source_code_hash               = "qWsShQNJWqu8hNvoGs38x93ViZr5jy3HbHj3AW0occA="
+      + source_code_size               = (known after apply)
+      + tags                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-worker"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-worker"
+          + "Project"     = "oyd-project"
+        }
+      + timeout                        = 30
+      + version                        = (known after apply)
+
+      + environment {
+          + variables = (known after apply)
+        }
+
+      + ephemeral_storage (known after apply)
+
+      + logging_config (known after apply)
+
+      + tracing_config (known after apply)
+
+      + vpc_config {
+          + ipv6_allowed_for_dual_stack = false
+          + security_group_ids          = (known after apply)
+          + subnet_ids                  = (known after apply)
+          + vpc_id                      = (known after apply)
+        }
+    }
+
+  # module.compute.aws_lambda_layer_version.pymysql will be created
+  + resource "aws_lambda_layer_version" "pymysql" {
+      + arn                         = (known after apply)
+      + code_sha256                 = (known after apply)
+      + compatible_runtimes         = [
+          + "python3.12",
+        ]
+      + created_date                = (known after apply)
+      + description                 = "pymysql library for MySQL connections from Lambda"
+      + filename                    = "modules/compute/pymysql_layer.zip"
+      + id                          = (known after apply)
+      + layer_arn                   = (known after apply)
+      + layer_name                  = "oyd-project-dev-pymysql"
+      + signing_job_arn             = (known after apply)
+      + signing_profile_version_arn = (known after apply)
+      + skip_destroy                = false
+      + source_code_hash            = (known after apply)
+      + source_code_size            = (known after apply)
+      + version                     = (known after apply)
+    }
+
+  # module.compute.aws_lambda_layer_version.reportlab will be created
+  + resource "aws_lambda_layer_version" "reportlab" {
+      + arn                         = (known after apply)
+      + code_sha256                 = (known after apply)
+      + compatible_runtimes         = [
+          + "python3.12",
+        ]
+      + created_date                = (known after apply)
+      + description                 = "reportlab y pandas para generacion de PDFs en Lambda Worker"
+      + filename                    = "modules/compute/reportlab_layer.zip"
+      + id                          = (known after apply)
+      + layer_arn                   = (known after apply)
+      + layer_name                  = "oyd-project-dev-reportlab"
+      + signing_job_arn             = (known after apply)
+      + signing_profile_version_arn = (known after apply)
+      + skip_destroy                = false
+      + source_code_hash            = (known after apply)
+      + source_code_size            = (known after apply)
+      + version                     = (known after apply)
+    }
+
+  # module.database.aws_db_instance.this will be created
+  + resource "aws_db_instance" "this" {
+      + address                               = (known after apply)
+      + allocated_storage                     = 20
+      + apply_immediately                     = false
+      + arn                                   = (known after apply)
+      + auto_minor_version_upgrade            = true
+      + availability_zone                     = (known after apply)
+      + backup_retention_period               = (known after apply)
+      + backup_target                         = (known after apply)
+      + backup_window                         = (known after apply)
+      + ca_cert_identifier                    = (known after apply)
+      + character_set_name                    = (known after apply)
+      + copy_tags_to_snapshot                 = false
+      + database_insights_mode                = (known after apply)
+      + db_name                               = "spvr"
+      + db_subnet_group_name                  = "oyd-project-dev-subnet-group"
+      + dedicated_log_volume                  = false
+      + delete_automated_backups              = true
+      + domain_fqdn                           = (known after apply)
+      + endpoint                              = (known after apply)
+      + engine                                = "mysql"
+      + engine_lifecycle_support              = (known after apply)
+      + engine_version                        = "8.0"
+      + engine_version_actual                 = (known after apply)
+      + hosted_zone_id                        = (known after apply)
+      + id                                    = (known after apply)
+      + identifier                            = "oyd-project-dev-db"
+      + identifier_prefix                     = (known after apply)
+      + instance_class                        = "db.t3.micro"
+      + iops                                  = (known after apply)
+      + kms_key_id                            = (known after apply)
+      + latest_restorable_time                = (known after apply)
+      + license_model                         = (known after apply)
+      + listener_endpoint                     = (known after apply)
+      + maintenance_window                    = (known after apply)
+      + master_user_secret                    = (known after apply)
+      + master_user_secret_kms_key_id         = (known after apply)
+      + monitoring_interval                   = 0
+      + monitoring_role_arn                   = (known after apply)
+      + multi_az                              = false
+      + nchar_character_set_name              = (known after apply)
+      + network_type                          = (known after apply)
+      + option_group_name                     = (known after apply)
+      + parameter_group_name                  = "oyd-project-dev-mysql8"
+      + password                              = (sensitive value)
+      + password_wo                           = (write-only attribute)
+      + performance_insights_enabled          = false
+      + performance_insights_kms_key_id       = (known after apply)
+      + performance_insights_retention_period = (known after apply)
+      + port                                  = (known after apply)
+      + publicly_accessible                   = false
+      + replica_mode                          = (known after apply)
+      + replicas                              = (known after apply)
+      + resource_id                           = (known after apply)
+      + skip_final_snapshot                   = true
+      + snapshot_identifier                   = (known after apply)
+      + status                                = (known after apply)
+      + storage_encrypted                     = true
+      + storage_throughput                    = (known after apply)
+      + storage_type                          = (known after apply)
+      + tags                                  = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-db"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                              = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-db"
+          + "Project"     = "oyd-project"
+        }
+      + timezone                              = (known after apply)
+      + username                              = "admin"
+      + vpc_security_group_ids                = (known after apply)
+    }
+
+  # module.database.aws_db_parameter_group.this will be created
+  + resource "aws_db_parameter_group" "this" {
+      + arn          = (known after apply)
+      + description  = "Managed by Terraform"
+      + family       = "mysql8.0"
+      + id           = (known after apply)
+      + name         = "oyd-project-dev-mysql8"
+      + name_prefix  = (known after apply)
+      + skip_destroy = false
+      + tags         = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-mysql8"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all     = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-mysql8"
+          + "Project"     = "oyd-project"
+        }
+
+      + parameter {
+          + apply_method = "immediate"
+          + name         = "general_log"
+          + value        = "1"
+        }
+    }
+
+  # module.database.aws_db_subnet_group.this will be created
+  + resource "aws_db_subnet_group" "this" {
+      + arn                     = (known after apply)
+      + description             = "Managed by Terraform"
+      + id                      = (known after apply)
+      + name                    = "oyd-project-dev-subnet-group"
+      + name_prefix             = (known after apply)
+      + subnet_ids              = (known after apply)
+      + supported_network_types = (known after apply)
+      + tags                    = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-subnet-group"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-subnet-group"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id                  = (known after apply)
+    }
+
+  # module.ingress.aws_apigatewayv2_api.this will be created
+  + resource "aws_apigatewayv2_api" "this" {
+      + api_endpoint                 = (known after apply)
+      + api_key_selection_expression = "$request.header.x-api-key"
+      + arn                          = (known after apply)
+      + execution_arn                = (known after apply)
+      + id                           = (known after apply)
+      + ip_address_type              = (known after apply)
+      + name                         = "oyd-project-dev-api"
+      + protocol_type                = "HTTP"
+      + route_selection_expression   = "$request.method $request.path"
+      + tags                         = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-api"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                     = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-api"
+          + "Project"     = "oyd-project"
+        }
+
+      + cors_configuration {
+          + allow_headers = [
+              + "authorization",
+              + "content-type",
+            ]
+          + allow_methods = [
+              + "DELETE",
+              + "GET",
+              + "OPTIONS",
+              + "POST",
+              + "PUT",
+            ]
+          + allow_origins = [
+              + "*",
+            ]
+        }
+    }
+
+  # module.ingress.aws_apigatewayv2_integration.lambda will be created
+  + resource "aws_apigatewayv2_integration" "lambda" {
+      + api_id                                    = (known after apply)
+      + connection_type                           = "INTERNET"
+      + id                                        = (known after apply)
+      + integration_response_selection_expression = (known after apply)
+      + integration_type                          = "AWS_PROXY"
+      + integration_uri                           = (known after apply)
+      + payload_format_version                    = "2.0"
+      + timeout_milliseconds                      = (known after apply)
+    }
+
+  # module.ingress.aws_apigatewayv2_route.get will be created
+  + resource "aws_apigatewayv2_route" "get" {
+      + api_id             = (known after apply)
+      + api_key_required   = false
+      + authorization_type = "NONE"
+      + id                 = (known after apply)
+      + route_key          = "GET /{proxy+}"
+      + target             = (known after apply)
+    }
+
+  # module.ingress.aws_apigatewayv2_route.post will be created
+  + resource "aws_apigatewayv2_route" "post" {
+      + api_id             = (known after apply)
+      + api_key_required   = false
+      + authorization_type = "NONE"
+      + id                 = (known after apply)
+      + route_key          = "POST /{proxy+}"
+      + target             = (known after apply)
+    }
+
+  # module.ingress.aws_apigatewayv2_route.root will be created
+  + resource "aws_apigatewayv2_route" "root" {
+      + api_id             = (known after apply)
+      + api_key_required   = false
+      + authorization_type = "NONE"
+      + id                 = (known after apply)
+      + route_key          = "GET /"
+      + target             = (known after apply)
+    }
+
+  # module.ingress.aws_apigatewayv2_stage.default will be created
+  + resource "aws_apigatewayv2_stage" "default" {
+      + api_id        = (known after apply)
+      + arn           = (known after apply)
+      + auto_deploy   = true
+      + deployment_id = (known after apply)
+      + execution_arn = (known after apply)
+      + id            = (known after apply)
+      + invoke_url    = (known after apply)
+      + name          = "$default"
+      + tags          = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-api-stage"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all      = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-api-stage"
+          + "Project"     = "oyd-project"
+        }
+    }
+
+  # module.ingress.aws_lambda_permission.api_gw will be created
+  + resource "aws_lambda_permission" "api_gw" {
+      + action              = "lambda:InvokeFunction"
+      + function_name       = "oyd-project-dev-api"
+      + id                  = (known after apply)
+      + principal           = "apigateway.amazonaws.com"
+      + source_arn          = (known after apply)
+      + statement_id        = "AllowAPIGatewayInvoke"
+      + statement_id_prefix = (known after apply)
+    }
+
+  # module.network.aws_eip.nat[0] will be created
+  + resource "aws_eip" "nat" {
+      + allocation_id        = (known after apply)
+      + arn                  = (known after apply)
+      + association_id       = (known after apply)
+      + carrier_ip           = (known after apply)
+      + customer_owned_ip    = (known after apply)
+      + domain               = "vpc"
+      + id                   = (known after apply)
+      + instance             = (known after apply)
+      + ipam_pool_id         = (known after apply)
+      + network_border_group = (known after apply)
+      + network_interface    = (known after apply)
+      + private_dns          = (known after apply)
+      + private_ip           = (known after apply)
+      + ptr_record           = (known after apply)
+      + public_dns           = (known after apply)
+      + public_ip            = (known after apply)
+      + public_ipv4_pool     = (known after apply)
+      + tags                 = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-nat-eip-1"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all             = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-nat-eip-1"
+          + "Project"     = "oyd-project"
+        }
+      + vpc                  = (known after apply)
+    }
+
+  # module.network.aws_internet_gateway.this will be created
+  + resource "aws_internet_gateway" "this" {
+      + arn      = (known after apply)
+      + id       = (known after apply)
+      + owner_id = (known after apply)
+      + tags     = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-igw"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-igw"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id   = (known after apply)
+    }
+
+  # module.network.aws_nat_gateway.this[0] will be created
+  + resource "aws_nat_gateway" "this" {
+      + allocation_id                      = (known after apply)
+      + association_id                     = (known after apply)
+      + connectivity_type                  = "public"
+      + id                                 = (known after apply)
+      + network_interface_id               = (known after apply)
+      + private_ip                         = (known after apply)
+      + public_ip                          = (known after apply)
+      + secondary_private_ip_address_count = (known after apply)
+      + secondary_private_ip_addresses     = (known after apply)
+      + subnet_id                          = (known after apply)
+      + tags                               = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-nat-1"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-nat-1"
+          + "Project"     = "oyd-project"
+        }
+    }
+
+  # module.network.aws_network_acl.private will be created
+  + resource "aws_network_acl" "private" {
+      + arn        = (known after apply)
+      + egress     = [
+          + {
+              + action          = "allow"
+              + cidr_block      = "0.0.0.0/0"
+              + from_port       = 0
+              + protocol        = "-1"
+              + rule_no         = 100
+              + to_port         = 0
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + id         = (known after apply)
+      + ingress    = [
+          + {
+              + action          = "allow"
+              + cidr_block      = "0.0.0.0/0"
+              + from_port       = 1024
+              + protocol        = "tcp"
+              + rule_no         = 110
+              + to_port         = 65535
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + action          = "allow"
+              + cidr_block      = "10.0.0.0/16"
+              + from_port       = 3306
+              + protocol        = "tcp"
+              + rule_no         = 100
+              + to_port         = 3306
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + owner_id   = (known after apply)
+      + subnet_ids = (known after apply)
+      + tags       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-nacl"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all   = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-nacl"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id     = (known after apply)
+    }
+
+  # module.network.aws_network_acl.public will be created
+  + resource "aws_network_acl" "public" {
+      + arn        = (known after apply)
+      + egress     = [
+          + {
+              + action          = "allow"
+              + cidr_block      = "0.0.0.0/0"
+              + from_port       = 0
+              + protocol        = "-1"
+              + rule_no         = 100
+              + to_port         = 0
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + id         = (known after apply)
+      + ingress    = [
+          + {
+              + action          = "allow"
+              + cidr_block      = "0.0.0.0/0"
+              + from_port       = 1024
+              + protocol        = "tcp"
+              + rule_no         = 120
+              + to_port         = 65535
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + action          = "allow"
+              + cidr_block      = "0.0.0.0/0"
+              + from_port       = 443
+              + protocol        = "tcp"
+              + rule_no         = 110
+              + to_port         = 443
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + action          = "allow"
+              + cidr_block      = "0.0.0.0/0"
+              + from_port       = 80
+              + protocol        = "tcp"
+              + rule_no         = 100
+              + to_port         = 80
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + owner_id   = (known after apply)
+      + subnet_ids = (known after apply)
+      + tags       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-nacl"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all   = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-nacl"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id     = (known after apply)
+    }
+
+  # module.network.aws_route_table.private[0] will be created
+  + resource "aws_route_table" "private" {
+      + arn              = (known after apply)
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + route            = [
+          + {
+              + cidr_block                 = "0.0.0.0/0"
+              + nat_gateway_id             = (known after apply)
+                # (11 unchanged attributes hidden)
+            },
+        ]
+      + tags             = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-rt-1"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all         = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-rt-1"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id           = (known after apply)
+    }
+
+  # module.network.aws_route_table.public will be created
+  + resource "aws_route_table" "public" {
+      + arn              = (known after apply)
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + route            = [
+          + {
+              + cidr_block                 = "0.0.0.0/0"
+              + gateway_id                 = (known after apply)
+                # (11 unchanged attributes hidden)
+            },
+        ]
+      + tags             = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-rt"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all         = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-rt"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id           = (known after apply)
+    }
+
+  # module.network.aws_route_table_association.private[0] will be created
+  + resource "aws_route_table_association" "private" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.network.aws_route_table_association.private[1] will be created
+  + resource "aws_route_table_association" "private" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.network.aws_route_table_association.public[0] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.network.aws_route_table_association.public[1] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.network.aws_security_group.app_sg will be created
+  + resource "aws_security_group" "app_sg" {
+      + arn                    = (known after apply)
+      + description            = "Allow inbound from web-sg only. Allow egress to db-sg."
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = "Allow all outbound (NAT Gateway handles S3/SES/SQS)"
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = "oyd-project-dev-app-sg"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-app-sg"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all               = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-app-sg"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.network.aws_security_group.db_sg will be created
+  + resource "aws_security_group" "db_sg" {
+      + arn                    = (known after apply)
+      + description            = "Allow MySQL inbound from app-sg only. No internet egress."
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = "oyd-project-dev-db-sg"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-db-sg"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all               = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-db-sg"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.network.aws_security_group.web_sg will be created
+  + resource "aws_security_group" "web_sg" {
+      + arn                    = (known after apply)
+      + description            = "Allow HTTP and HTTPS inbound from internet"
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = "Allow all outbound"
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = "HTTP from internet"
+              + from_port        = 80
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 80
+            },
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = "HTTPS from internet"
+              + from_port        = 443
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 443
+            },
+        ]
+      + name                   = "oyd-project-dev-web-sg"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-web-sg"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all               = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-web-sg"
+          + "Project"     = "oyd-project"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.network.aws_security_group_rule.app_ingress_from_web will be created
+  + resource "aws_security_group_rule" "app_ingress_from_web" {
+      + description              = "Allow inbound from web-sg on HTTPS"
+      + from_port                = 443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 443
+      + type                     = "ingress"
+    }
+
+  # module.network.aws_security_group_rule.db_ingress_from_app will be created
+  + resource "aws_security_group_rule" "db_ingress_from_app" {
+      + description              = "Allow MySQL from app-sg only"
+      + from_port                = 3306
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 3306
+      + type                     = "ingress"
+    }
+
+  # module.network.aws_subnet.private[0] will be created
+  + resource "aws_subnet" "private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.11.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-subnet-1"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "private"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-subnet-1"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "private"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.network.aws_subnet.private[1] will be created
+  + resource "aws_subnet" "private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.12.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-subnet-2"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "private"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-private-subnet-2"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "private"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.network.aws_subnet.public[0] will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.1.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-subnet-1"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "public"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-subnet-1"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "public"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.network.aws_subnet.public[1] will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.2.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-subnet-2"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "public"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-public-subnet-2"
+          + "Project"     = "oyd-project"
+          + "Tier"        = "public"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.network.aws_vpc.this will be created
+  + resource "aws_vpc" "this" {
+      + arn                                  = (known after apply)
+      + cidr_block                           = "10.0.0.0/16"
+      + default_network_acl_id               = (known after apply)
+      + default_route_table_id               = (known after apply)
+      + default_security_group_id            = (known after apply)
+      + dhcp_options_id                      = (known after apply)
+      + enable_dns_hostnames                 = true
+      + enable_dns_support                   = true
+      + enable_network_address_usage_metrics = (known after apply)
+      + id                                   = (known after apply)
+      + instance_tenancy                     = "default"
+      + ipv6_association_id                  = (known after apply)
+      + ipv6_cidr_block                      = (known after apply)
+      + ipv6_cidr_block_network_border_group = (known after apply)
+      + main_route_table_id                  = (known after apply)
+      + owner_id                             = (known after apply)
+      + tags                                 = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-vpc"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                             = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-vpc"
+          + "Project"     = "oyd-project"
+        }
+    }
+
+  # module.scheduler.aws_iam_role.cleanup_exec will be created
+  + resource "aws_iam_role" "cleanup_exec" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "lambda.amazonaws.com"
+                        }
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "oyd-project-dev-cleanup-role"
+      + name_prefix           = (known after apply)
+      + path                  = "/"
+      + tags                  = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "oyd-project-dev-cleanup-role"
+        }
+      + tags_all              = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "oyd-project-dev-cleanup-role"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # module.scheduler.aws_iam_role.scheduler_exec will be created
+  + resource "aws_iam_role" "scheduler_exec" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "scheduler.amazonaws.com"
+                        }
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "oyd-project-dev-scheduler-role"
+      + name_prefix           = (known after apply)
+      + path                  = "/"
+      + tags                  = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "oyd-project-dev-scheduler-role"
+        }
+      + tags_all              = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "oyd-project-dev-scheduler-role"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # module.scheduler.aws_iam_role_policy.scheduler_invoke will be created
+  + resource "aws_iam_role_policy" "scheduler_invoke" {
+      + id          = (known after apply)
+      + name        = "oyd-project-dev-scheduler-invoke-policy"
+      + name_prefix = (known after apply)
+      + policy      = (known after apply)
+      + role        = (known after apply)
+    }
+
+  # module.scheduler.aws_iam_role_policy_attachment.cleanup_vpc will be created
+  + resource "aws_iam_role_policy_attachment" "cleanup_vpc" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      + role       = "oyd-project-dev-cleanup-role"
+    }
+
+  # module.scheduler.aws_lambda_function.cleanup will be created
+  + resource "aws_lambda_function" "cleanup" {
+      + architectures                  = (known after apply)
+      + arn                            = (known after apply)
+      + code_sha256                    = (known after apply)
+      + filename                       = "modules/scheduler/lambda_cleanup.zip"
+      + function_name                  = "oyd-project-dev-cleanup"
+      + handler                        = "handler_cleanup.handler"
+      + id                             = (known after apply)
+      + invoke_arn                     = (known after apply)
+      + last_modified                  = (known after apply)
+      + layers                         = (known after apply)
+      + memory_size                    = 128
+      + package_type                   = "Zip"
+      + publish                        = false
+      + qualified_arn                  = (known after apply)
+      + qualified_invoke_arn           = (known after apply)
+      + reserved_concurrent_executions = -1
+      + role                           = (known after apply)
+      + runtime                        = "python3.12"
+      + signing_job_arn                = (known after apply)
+      + signing_profile_version_arn    = (known after apply)
+      + skip_destroy                   = false
+      + source_code_hash               = "JrdNdkfMNv3CYPom1zZyW61CcHlrTAk4Gu8LTkdsrQQ="
+      + source_code_size               = (known after apply)
+      + tags                           = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "oyd-project-dev-cleanup"
+        }
+      + tags_all                       = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "oyd-project-dev-cleanup"
+        }
+      + timeout                        = 30
+      + version                        = (known after apply)
+
+      + environment {
+          + variables = (known after apply)
+        }
+
+      + ephemeral_storage (known after apply)
+
+      + logging_config (known after apply)
+
+      + tracing_config (known after apply)
+
+      + vpc_config {
+          + ipv6_allowed_for_dual_stack = false
+          + security_group_ids          = (known after apply)
+          + subnet_ids                  = (known after apply)
+          + vpc_id                      = (known after apply)
+        }
+    }
+
+  # module.scheduler.aws_scheduler_schedule.cleanup will be created
+  + resource "aws_scheduler_schedule" "cleanup" {
+      + arn                          = (known after apply)
+      + group_name                   = "default"
+      + id                           = (known after apply)
+      + name                         = "oyd-project-dev-cleanup-schedule"
+      + name_prefix                  = (known after apply)
+      + schedule_expression          = "rate(1 hour)"
+      + schedule_expression_timezone = "America/Guatemala"
+      + state                        = "ENABLED"
+
+      + flexible_time_window {
+          + mode = "OFF"
+        }
+
+      + target {
+          + arn      = (known after apply)
+          + input    = jsonencode(
+                {
+                  + action = "cleanup-stale-jobs"
+                  + source = "eventbridge-scheduler"
+                }
+            )
+          + role_arn = (known after apply)
+        }
+    }
+
+  # module.storage_files.aws_s3_bucket.this will be created
+  + resource "aws_s3_bucket" "this" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = "oyd-project-dev-files"
+      + bucket_domain_name          = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = false
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = (known after apply)
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-files"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                    = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-files"
+          + "Project"     = "oyd-project"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # module.storage_files.aws_s3_bucket_cors_configuration.this will be created
+  + resource "aws_s3_bucket_cors_configuration" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + cors_rule {
+          + allowed_headers = [
+              + "*",
+            ]
+          + allowed_methods = [
+              + "GET",
+              + "POST",
+              + "PUT",
+            ]
+          + allowed_origins = [
+              + "*",
+            ]
+          + expose_headers  = [
+              + "ETag",
+            ]
+            id              = null
+          + max_age_seconds = 3000
+        }
+    }
+
+  # module.storage_files.aws_s3_bucket_lifecycle_configuration.this will be created
+  + resource "aws_s3_bucket_lifecycle_configuration" "this" {
+      + bucket                                 = (known after apply)
+      + expected_bucket_owner                  = (known after apply)
+      + id                                     = (known after apply)
+      + transition_default_minimum_object_size = "all_storage_classes_128K"
+
+      + rule {
+          + id     = "files-transition-rule"
+          + status = "Enabled"
+            # (1 unchanged attribute hidden)
+
+          + filter {
+              + prefix = "files/"
+            }
+
+          + noncurrent_version_expiration {
+              + noncurrent_days = 90
+            }
+
+          + transition {
+              + days          = 30
+              + storage_class = "STANDARD_IA"
+            }
+        }
+    }
+
+  # module.storage_files.aws_s3_bucket_policy.this will be created
+  + resource "aws_s3_bucket_policy" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+      + policy = (known after apply)
+    }
+
+  # module.storage_files.aws_s3_bucket_public_access_block.this will be created
+  + resource "aws_s3_bucket_public_access_block" "this" {
+      + block_public_acls       = true
+      + block_public_policy     = true
+      + bucket                  = (known after apply)
+      + id                      = (known after apply)
+      + ignore_public_acls      = true
+      + restrict_public_buckets = true
+    }
+
+  # module.storage_files.aws_s3_bucket_server_side_encryption_configuration.this will be created
+  + resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + rule {
+          + apply_server_side_encryption_by_default {
+              + sse_algorithm     = "AES256"
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # module.storage_files.aws_s3_bucket_versioning.this will be created
+  + resource "aws_s3_bucket_versioning" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + versioning_configuration {
+          + mfa_delete = (known after apply)
+          + status     = "Enabled"
+        }
+    }
+
+  # module.storage_reports.aws_s3_bucket.this will be created
+  + resource "aws_s3_bucket" "this" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = "oyd-project-dev-reports"
+      + bucket_domain_name          = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = false
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = (known after apply)
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-reports"
+          + "Project"     = "oyd-project"
+        }
+      + tags_all                    = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "oyd-project-dev-reports"
+          + "Project"     = "oyd-project"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # module.storage_reports.aws_s3_bucket_cors_configuration.this will be created
+  + resource "aws_s3_bucket_cors_configuration" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + cors_rule {
+          + allowed_headers = [
+              + "*",
+            ]
+          + allowed_methods = [
+              + "GET",
+              + "POST",
+              + "PUT",
+            ]
+          + allowed_origins = [
+              + "*",
+            ]
+          + expose_headers  = [
+              + "ETag",
+            ]
+            id              = null
+          + max_age_seconds = 3000
+        }
+    }
+
+  # module.storage_reports.aws_s3_bucket_lifecycle_configuration.this will be created
+  + resource "aws_s3_bucket_lifecycle_configuration" "this" {
+      + bucket                                 = (known after apply)
+      + expected_bucket_owner                  = (known after apply)
+      + id                                     = (known after apply)
+      + transition_default_minimum_object_size = "all_storage_classes_128K"
+
+      + rule {
+          + id     = "reports-transition-rule"
+          + status = "Enabled"
+            # (1 unchanged attribute hidden)
+
+          + filter {
+              + prefix = "reports/"
+            }
+
+          + noncurrent_version_expiration {
+              + noncurrent_days = 90
+            }
+
+          + transition {
+              + days          = 30
+              + storage_class = "STANDARD_IA"
+            }
+        }
+    }
+
+  # module.storage_reports.aws_s3_bucket_policy.this will be created
+  + resource "aws_s3_bucket_policy" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+      + policy = (known after apply)
+    }
+
+  # module.storage_reports.aws_s3_bucket_public_access_block.this will be created
+  + resource "aws_s3_bucket_public_access_block" "this" {
+      + block_public_acls       = true
+      + block_public_policy     = true
+      + bucket                  = (known after apply)
+      + id                      = (known after apply)
+      + ignore_public_acls      = true
+      + restrict_public_buckets = true
+    }
+
+  # module.storage_reports.aws_s3_bucket_server_side_encryption_configuration.this will be created
+  + resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + rule {
+          + apply_server_side_encryption_by_default {
+              + sse_algorithm     = "AES256"
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # module.storage_reports.aws_s3_bucket_versioning.this will be created
+  + resource "aws_s3_bucket_versioning" "this" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + versioning_configuration {
+          + mfa_delete = (known after apply)
+          + status     = "Enabled"
+        }
+    }
+
+Plan: 65 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + api_endpoint                = (known after apply)
+  + db_endpoint                 = (known after apply)
+  + db_name                     = "spvr"
+  + lambda_function_arn         = (known after apply)
+  + lambda_function_name        = "oyd-project-dev-api"
+  + nat_gateway_ids             = [
+      + (known after apply),
+    ]
+  + private_subnet_ids          = [
+      + (known after apply),
+      + (known after apply),
+    ]
+  + public_subnet_ids           = [
+      + (known after apply),
+      + (known after apply),
+    ]
+  + sqs_dlq_arn                 = (known after apply)
+  + sqs_dlq_url                 = (known after apply)
+  + sqs_queue_arn               = (known after apply)
+  + sqs_queue_url               = (known after apply)
+  + storage_files_bucket_arn    = (known after apply)
+  + storage_files_bucket_name   = (known after apply)
+  + storage_reports_bucket_arn  = (known after apply)
+  + storage_reports_bucket_name = (known after apply)
+  + vpc_id                      = (known after apply)
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Saved the plan to: tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan"

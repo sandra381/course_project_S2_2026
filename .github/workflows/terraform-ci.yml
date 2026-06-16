@@ -46,7 +46,9 @@ jobs:
         run: terraform validate
         working-directory: infra/
 
-  # ─── JOB 3: PLAN ─────────────────────────────────────────────────────────────
+  # ─── JOB 3: PLAN (dev + staging) ─────────────────────────────────────────────
+  # Genera DOS artifacts en el PR — uno por ambiente.
+  # El nombre incluye el SHA del commit para que los applies lo encuentren exacto.
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
@@ -65,49 +67,78 @@ jobs:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ secrets.AWS_REGION }}
-      - name: Terraform Init
+
+      # ── Plan dev ──────────────────────────────────────────────────────────────
+      - name: Terraform Init — dev
         run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
-      - name: Terraform Plan
-        id: plan
+
+      - name: Terraform Plan — dev
+        id: plan-dev
         run: |
           terraform plan \
             -var-file=envs/dev/dev.tfvars \
             -var="db_password=${{ secrets.DEV_DB_PASSWORD }}" \
-            -out=tfplan \
-            -no-color 2>&1 | tee plan.txt
+            -out=tfplan-dev \
+            -no-color 2>&1 | tee plan-dev.txt
         working-directory: infra/
 
-      # Nombre fijo para que el apply de dev lo encuentre siempre
-      - name: Upload Plan Artifact
+      - name: Upload Plan Artifact — dev
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-dev
-          path: infra/tfplan
+          name: tfplan-dev-${{ github.sha }}
+          path: infra/tfplan-dev
           retention-days: 5
 
+      # ── Plan staging ──────────────────────────────────────────────────────────
+      # -reconfigure le dice a Terraform que cambie de backend sin error
+      - name: Terraform Init — staging
+        run: terraform init -reconfigure -backend-config=envs/staging/backend-staging.hcl
+        working-directory: infra/
+
+      - name: Terraform Plan — staging
+        id: plan-staging
+        run: |
+          terraform plan \
+            -var-file=envs/staging/staging.tfvars \
+            -var="db_password=${{ secrets.STAGING_DB_PASSWORD }}" \
+            -out=tfplan-staging \
+            -no-color 2>&1 | tee plan-staging.txt
+        working-directory: infra/
+
+      - name: Upload Plan Artifact — staging
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-staging-${{ github.sha }}
+          path: infra/tfplan-staging
+          retention-days: 5
+
+      # ── Comentario en el PR con ambos planes ──────────────────────────────────
       - name: Post Plan as PR Comment
-        if: always() && steps.plan.outcome != 'skipped'
+        if: always() && steps.plan-dev.outcome != 'skipped'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('infra/plan.txt', 'utf8');
-            const truncated = plan.length > 60000
-              ? plan.substring(0, 60000) + '\n\n... [output truncated] ...'
-              : plan;
-            const outcome = '${{ steps.plan.outcome }}';
-            const icon = outcome === 'success' ? '✅' : '❌';
+            const planDev     = fs.readFileSync('infra/plan-dev.txt', 'utf8');
+            const planStaging = fs.readFileSync('infra/plan-staging.txt', 'utf8');
+            const combined = planDev + '\n\n--- STAGING ---\n\n' + planStaging;
+            const truncated = combined.length > 60000
+              ? combined.substring(0, 60000) + '\n\n... [output truncated] ...'
+              : combined;
+            const devOutcome     = '${{ steps.plan-dev.outcome }}';
+            const stagingOutcome = '${{ steps.plan-staging.outcome }}';
+            const icon = (devOutcome === 'success' && stagingOutcome === 'success') ? '✅' : '❌';
             github.rest.issues.createComment({
               ...context.repo,
               issue_number: context.issue.number,
-              body: `## ${icon} Terraform Plan — \`${outcome}\`\n\n<details>\n<summary>Click to expand full plan output</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n\n</details>\n\n> Plan generado desde \`infra/envs/dev/dev.tfvars\` en commit \`${{ github.sha }}\``
+              body: `## ${icon} Terraform Plan\n- dev: \`${devOutcome}\`\n- staging: \`${stagingOutcome}\`\n\n<details>\n<summary>Ver plan completo (dev + staging)</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n\n</details>\n\n> Planes generados en commit \`${{ github.sha }}\``
             });
         continue-on-error: true
 
   # ─── APPLY DEV ───────────────────────────────────────────────────────────────
-  # Corre automáticamente al hacer merge a main.
-  # Descarga el tfplan generado en el PR — NO vuelve a planear.
+  # Al hacer merge, busca el run del PR por SHA y baja el artifact exacto.
+  # NO re-planea — solo descarga y aplica.
   terraform-apply-dev:
     name: Terraform Apply — dev
     runs-on: ubuntu-latest
@@ -115,6 +146,7 @@ jobs:
     environment: dev
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -128,17 +160,42 @@ jobs:
       - name: Terraform Init
         run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
-      - name: Download Plan Artifact
+
+      # Busca el run del PR que generó el plan para este SHA exacto
+      - name: Find PR Run ID
+        id: find-run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'terraform-ci.yml',
+              event: 'pull_request',
+              status: 'success',
+              per_page: 10
+            });
+            const match = runs.data.workflow_runs.find(
+              r => r.head_sha === context.sha
+            );
+            if (!match) core.setFailed('No se encontro el run del PR para este SHA: ' + context.sha);
+            core.setOutput('run_id', match.id.toString());
+
+      - name: Download Plan Artifact — dev
         uses: actions/download-artifact@v4
         with:
-          name: tfplan-dev
+          name: tfplan-dev-${{ github.sha }}
           path: infra/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.find-run.outputs.run_id }}
+
       - name: Terraform Apply
-        run: terraform apply tfplan
+        run: terraform apply tfplan-dev
         working-directory: infra/
 
   # ─── APPLY STAGING ───────────────────────────────────────────────────────────
-  # Corre después de dev. GitHub pausa y pide aprobación del reviewer.
+  # Igual que dev — busca el run del PR y baja tfplan-staging.
+  # GitHub pausa aquí y pide aprobación del reviewer antes de continuar.
   terraform-apply-staging:
     name: Terraform Apply — staging
     runs-on: ubuntu-latest
@@ -146,6 +203,7 @@ jobs:
     environment: staging
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -159,14 +217,34 @@ jobs:
       - name: Terraform Init
         run: terraform init -backend-config=envs/staging/backend-staging.hcl
         working-directory: infra/
-      - name: Terraform Plan — staging
-        run: |
-          terraform plan \
-            -var-file=envs/staging/staging.tfvars \
-            -var="db_password=${{ secrets.STAGING_DB_PASSWORD }}" \
-            -out=tfplan-staging \
-            -no-color
-        working-directory: infra/
-      - name: Terraform Apply — staging
+
+      - name: Find PR Run ID
+        id: find-run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'terraform-ci.yml',
+              event: 'pull_request',
+              status: 'success',
+              per_page: 10
+            });
+            const match = runs.data.workflow_runs.find(
+              r => r.head_sha === context.sha
+            );
+            if (!match) core.setFailed('No se encontro el run del PR para este SHA: ' + context.sha);
+            core.setOutput('run_id', match.id.toString());
+
+      - name: Download Plan Artifact — staging
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-staging-${{ github.sha }}
+          path: infra/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.find-run.outputs.run_id }}
+
+      - name: Terraform Apply
         run: terraform apply tfplan-staging
         working-directory: infra/

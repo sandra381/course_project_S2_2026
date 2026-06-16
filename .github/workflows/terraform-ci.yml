@@ -110,7 +110,6 @@ jobs:
           path: infra/tfplan-staging
           retention-days: 5
 
-      # ── Comentario en el PR ───────────────────────────────────────────────────
       - name: Post Plan as PR Comment
         if: always() && steps.plan-dev.outcome != 'skipped'
         uses: actions/github-script@v7
@@ -134,7 +133,6 @@ jobs:
         continue-on-error: true
 
   # ─── APPLY DEV ───────────────────────────────────────────────────────────────
-  # Busca el artifact por nombre de rama — funciona con squash merge y merge commit
   terraform-apply-dev:
     name: Terraform Apply — dev
     runs-on: ubuntu-latest
@@ -157,7 +155,6 @@ jobs:
         run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
 
-      # Busca el run del PR más reciente exitoso y baja el artifact
       - name: Find PR Run ID
         id: find-run
         uses: actions/github-script@v7

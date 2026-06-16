@@ -47,9 +47,9 @@ La integración con Lambda Worker (procesamiento asíncrono vía SQS) queda pend
 | Dashboard | `GET /jobs` → Lambda API → RDS | ✅ Conectado |
 | Cargar CSV | `POST /upload` → Lambda API → RDS + S3 | ✅ Conectado |
 | JobStatus | `GET /jobs/{id}` → Lambda API → RDS | ✅ Conectado |
-| Historial | `GET /reports` → Lambda API → RDS | ⏳ Sin datos (requiere Worker — E4 ) |
-| Historial descarga | `GET /reports/{id}/download` → Lambda API → S3 | ⏳ Sin PDFs (requiere Worker — E4) |
-| ErrorLog | `GET /errors` → Lambda API → RDS | ⏳ Sin datos reales (requiere Worker — E4) |
+| Historial | `GET /reports` → Lambda API → RDS | ✅ Conectado |
+| Historial descarga | `GET /reports/{id}/download` → Lambda API → S3 | ✅ Conectado |
+| ErrorLog | `GET /errors` → Lambda API → RDS | ✅ Conectado |
 | SellerDashboard | — | 📋 Datos demo hardcodeados |
 | AdminDashboard | — | 📋 Datos demo hardcodeados |
 | ReportDetail | — | 📋 Datos demo hardcodeados |

@@ -16,7 +16,7 @@ message_retention_seconds     = 86400
 max_receive_count             = 3
 dlq_message_retention_seconds = 1209600
 
-batch_size                         = 1
+batch_size                         = 3
 maximum_batching_window_in_seconds = 0
 bisect_batch_on_function_error     = true
 

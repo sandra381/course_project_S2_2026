@@ -153,13 +153,15 @@ resource "aws_lambda_function" "worker" {
 
   environment {
     variables = {
-      ENVIRONMENT    = var.environment
-      PROJECT        = var.project_name
-      S3_BUCKET_NAME = var.s3_bucket_name
-      DB_HOST        = var.db_host
-      DB_NAME        = var.db_name
-      DB_USER        = var.db_username
-      DB_PASSWORD    = var.db_password
+      ENVIRONMENT       = var.environment
+      PROJECT           = var.project_name
+      S3_BUCKET_NAME    = var.s3_bucket_name
+      DB_HOST           = var.db_host
+      DB_NAME           = var.db_name
+      DB_USER           = var.db_username
+      DB_PASSWORD       = var.db_password
+      S3_REPORTS_BUCKET = var.s3_reports_bucket_name
+      SQS_QUEUE_URL     = var.sqs_queue_url
     }
   }
 
@@ -199,5 +201,6 @@ resource "aws_lambda_event_source_mapping" "sqs_worker" {
   function_name                      = aws_lambda_function.worker.arn
   batch_size                         = var.batch_size
   maximum_batching_window_in_seconds = var.maximum_batching_window_in_seconds
-  enabled                            = true
+  //bisect_batch_on_function_error     = var.bisect_batch_on_function_error
+  enabled = true
 }

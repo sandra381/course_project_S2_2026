@@ -247,8 +247,7 @@ Screenshot de Settings → Rules → Rulesets mostrando el ruleset Active en `ma
 ![Ruleset Config](evidence/ruleset-config.png)
 
 Screenshot de un PR mostrando el merge bloqueado por un check requerido pendiente/fallando y la rama desactualizada respecto a `main`:
-
-![Ruleset Blocked Merge]()
+![Ruleset Blocked Merge](evidence/ruleset-blocked-merge.png)
 
 ---
 

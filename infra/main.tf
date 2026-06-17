@@ -81,6 +81,7 @@ module "compute" {
   timeout                = 30
   s3_bucket_arn          = module.storage_files.bucket_arn
   s3_bucket_name         = module.storage_files.bucket_name
+  s3_reports_bucket_arn  = module.storage_reports.bucket_arn
   s3_reports_bucket_name = module.storage_reports.bucket_name
   db_host                = module.database.db_endpoint
   db_name                = module.database.db_name

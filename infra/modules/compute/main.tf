@@ -60,6 +60,13 @@ resource "aws_iam_role_policy" "lambda_s3" {
       {
         Effect = "Allow"
         Action = [
+          "s3:PutObject"
+        ]
+        Resource = "${var.s3_reports_bucket_arn}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -153,13 +160,15 @@ resource "aws_lambda_function" "worker" {
 
   environment {
     variables = {
-      ENVIRONMENT    = var.environment
-      PROJECT        = var.project_name
-      S3_BUCKET_NAME = var.s3_bucket_name
-      DB_HOST        = var.db_host
-      DB_NAME        = var.db_name
-      DB_USER        = var.db_username
-      DB_PASSWORD    = var.db_password
+      ENVIRONMENT       = var.environment
+      PROJECT           = var.project_name
+      S3_BUCKET_NAME    = var.s3_bucket_name
+      DB_HOST           = var.db_host
+      DB_NAME           = var.db_name
+      DB_USER           = var.db_username
+      DB_PASSWORD       = var.db_password
+      S3_REPORTS_BUCKET = var.s3_reports_bucket_name
+      SQS_QUEUE_URL     = var.sqs_queue_url
     }
   }
 

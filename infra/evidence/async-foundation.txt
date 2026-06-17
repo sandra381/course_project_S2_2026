@@ -1,18 +1,18 @@
-﻿api_endpoint = "https://jr0aj3lb2l.execute-api.us-east-1.amazonaws.com/"
+﻿api_endpoint = "https://200tq8aa9d.execute-api.us-east-1.amazonaws.com/"
 db_endpoint = "oyd-project-dev-db.c4xq80ckagkb.us-east-1.rds.amazonaws.com:3306"
 db_name = "spvr"
 lambda_function_arn = "arn:aws:lambda:us-east-1:121218949493:function:oyd-project-dev-api"
 lambda_function_name = "oyd-project-dev-api"
 nat_gateway_ids = [
-  "nat-0c33ee68cf278a753",
+  "nat-0e9502e98f0aba64e",
 ]
 private_subnet_ids = [
-  "subnet-04e97200eabc676f1",
-  "subnet-01b6ac356588d9510",
+  "subnet-0015f9ac45171db3f",
+  "subnet-02b1b4960ac15ed38",
 ]
 public_subnet_ids = [
-  "subnet-04a98ef44be336c2a",
-  "subnet-0303ddd5a87974711",
+  "subnet-0efe416505ffa8809",
+  "subnet-02167d660fe5caafd",
 ]
 sqs_dlq_arn = "arn:aws:sqs:us-east-1:121218949493:spvr-jobs-dlq"
 sqs_dlq_url = "https://sqs.us-east-1.amazonaws.com/121218949493/spvr-jobs-dlq"
@@ -22,4 +22,4 @@ storage_files_bucket_arn = "arn:aws:s3:::oyd-project-dev-files"
 storage_files_bucket_name = "oyd-project-dev-files"
 storage_reports_bucket_arn = "arn:aws:s3:::oyd-project-dev-reports"
 storage_reports_bucket_name = "oyd-project-dev-reports"
-vpc_id = "vpc-03c4295f515bed4d6"
+vpc_id = "vpc-0144a8eb600d17f19"

@@ -98,3 +98,8 @@ variable "sqs_queue_url" {
   description = "URL de la cola SQS principal. Se inyecta como variable de entorno en Lambda Worker."
   type        = string
 }
+
+variable "s3_reports_bucket_arn" {
+  description = "ARN del bucket S3 donde Lambda Worker guarda los reportes PDF generados. Se usa en la política IAM para dar permisos de escritura a Lambda Worker."
+  type        = string
+}

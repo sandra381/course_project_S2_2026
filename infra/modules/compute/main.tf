@@ -208,5 +208,6 @@ resource "aws_lambda_event_source_mapping" "sqs_worker" {
   function_name                      = aws_lambda_function.worker.arn
   batch_size                         = var.batch_size
   maximum_batching_window_in_seconds = var.maximum_batching_window_in_seconds
-  enabled                            = true
+  //bisect_batch_on_function_error     = var.bisect_batch_on_function_error
+  enabled = true
 }

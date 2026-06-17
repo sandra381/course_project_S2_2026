@@ -1,0 +1,8 @@
+﻿
+module.network.aws_security_group.db_sg: Refreshing state... [id=sg-0d1be7a03559ae64e]
+module.network.aws_security_group.web_sg: Refreshing state... [id=sg-0e58afadab5b46415]
+module.network.aws_security_group.app_sg: Refreshing state... [id=sg-0d3850e25bc236a49]
+module.network.aws_security_group_rule.db_ingress_from_app: Refreshing state... [id=sgrule-219402214]
+module.network.aws_security_group_rule.app_ingress_from_web: Refreshing state... [id=sgrule-519870834]
+
+

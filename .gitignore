@@ -26,6 +26,7 @@ terraform.rc
 # Terraform plan binary files
 *.tfplan
 tfplan
+tfplan-test
 
 # tfvars files that may contain secrets — use envs/dev/dev.tfvars for tracked config
 # *.tfvars   <- commented out; dev.tfvars is intentionally tracked

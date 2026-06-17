@@ -60,6 +60,13 @@ resource "aws_iam_role_policy" "lambda_s3" {
       {
         Effect = "Allow"
         Action = [
+          "s3:PutObject"
+        ]
+        Resource = "${var.s3_reports_bucket_arn}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"

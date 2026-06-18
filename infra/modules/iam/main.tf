@@ -849,3 +849,65 @@ resource "aws_iam_role_policy" "ci_runner_secrets_kms" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
+  name = "${local.prefix}-ci-readonly-extra"
+  role = aws_iam_role.ci_runner.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3ReadExtra"
+        Effect = "Allow"
+        Action = [
+          "s3:GetAccelerateConfiguration",
+          "s3:GetBucketAcl",
+          "s3:GetBucketLogging",
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetBucketRequestPayment",
+          "s3:GetReplicationConfiguration",
+          "s3:GetBucketOwnershipControls"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.project_name}-*"
+        ]
+      },
+      {
+        Sid    = "SQSReadExtra"
+        Effect = "Allow"
+        Action = [
+          "sqs:ListQueueTags",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SecretsReadExtra"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetResourcePolicy"
+        ]
+        Resource = "arn:aws:secretsmanager:${local.region}:${local.account_id}:secret:${var.project_name}-*"
+      },
+      {
+        Sid    = "EC2ReadExtra"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeAddressesAttribute",
+          "ec2:DescribeNetworkAcls",
+          "ec2:DescribeTags"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "KMSReadExtra"
+        Effect = "Allow"
+        Action = [
+          "kms:ListResourceTags"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}

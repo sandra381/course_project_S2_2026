@@ -88,3 +88,23 @@ output "sqs_dlq_arn" {
   description = "ARN de la Dead Letter Queue spvr-jobs-dlq."
   value       = module.async.dlq_arn
 }
+
+output "kms_key_arn" {
+  description = "ARN of the KMS CMK used to encrypt S3, RDS and Secrets Manager."
+  value       = module.secrets.kms_key_arn
+}
+
+output "kms_alias_name" {
+  description = "Alias of the KMS CMK."
+  value       = module.secrets.kms_alias_name
+}
+
+output "db_secret_arn" {
+  description = "ARN of the Secrets Manager secret storing the DB password."
+  value       = module.secrets.secret_arn
+}
+
+output "db_secret_name" {
+  description = "Name of the Secrets Manager secret."
+  value       = module.secrets.secret_name
+}

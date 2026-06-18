@@ -43,10 +43,9 @@ variable "db_username" {
   type        = string
 }
 
-variable "db_password" {
-  description = "Contraseña para conectarse a RDS. No debe aparecer en ningún archivo commiteado."
+variable "db_secret_arn" {
+  description = "ARN of the Secrets Manager secret storing the DB password. Injected as DB_SECRET_ARN env var. Provided by module.secrets.secret_arn."
   type        = string
-  sensitive   = true
 }
 
 variable "stale_hours" {
@@ -57,5 +56,20 @@ variable "stale_hours" {
 
 variable "pymysql_layer_arn" {
   description = "ARN del Lambda Layer de pymysql creado en el módulo compute. Se reutiliza para no duplicar el layer."
+  type        = string
+}
+
+variable "cleanup_role_arn" {
+  description = "ARN of the Lambda Cleanup execution role. Provided by module.iam.lambda_cleanup_role_arn."
+  type        = string
+}
+
+variable "scheduler_role_arn" {
+  description = "ARN of the EventBridge Scheduler role. Provided by module.iam.scheduler_exec_role_arn. Used in the schedule target."
+  type        = string
+}
+
+variable "scheduler_role_id" {
+  description = "ID (name) of the EventBridge Scheduler role. Provided by module.iam.scheduler_exec_role_id. Used to attach the invoke policy in this module."
   type        = string
 }

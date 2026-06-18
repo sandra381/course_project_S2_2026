@@ -10,7 +10,7 @@ output "function_name" {
 
 output "role_arn" {
   description = "ARN of the IAM role attached to the Lambda function."
-  value       = aws_iam_role.lambda_exec.arn
+  value       = var.api_role_arn
 }
 
 output "invoke_arn" {

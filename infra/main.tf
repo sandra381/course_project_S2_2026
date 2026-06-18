@@ -1,3 +1,34 @@
+# ─── MODULO IAM — central de roles y OIDC ───────────────────────
+module "iam" {
+  source = "./modules/iam"
+
+  environment           = var.environment
+  project_name          = var.project_name
+  s3_files_bucket_arn   = module.storage_files.bucket_arn
+  s3_reports_bucket_arn = module.storage_reports.bucket_arn
+  sqs_queue_arn         = module.async.queue_arn
+  db_instance_arn       = module.database.db_instance_arn
+
+  github_org  = var.github_org
+  github_repo = var.github_repo
+
+  tf_state_bucket_name = var.tf_state_bucket_name
+  tf_lock_table_name   = var.tf_lock_table_name
+}
+
+# ─── MODULO SECRETS — KMS + Secrets Manager (Delivery 5) ─────────────────────
+module "secrets" {
+  source = "./modules/secrets"
+
+  environment  = var.environment
+  project_name = var.project_name
+
+  db_password = var.db_password
+
+  lambda_api_role_name     = module.iam.lambda_api_role_name
+  lambda_worker_role_name  = module.iam.lambda_worker_role_name
+  lambda_cleanup_role_name = module.iam.lambda_cleanup_role_name
+}
 # ─── MODULO DE RED ─────────────────────────────────────────────────────────────
 module "network" {
   source               = "./modules/network"
@@ -46,6 +77,7 @@ module "storage_files" {
   environment  = var.environment
   project_name = var.project_name
   bucket_name  = "files"
+  kms_key_arn  = module.secrets.kms_key_arn
 }
 
 # ─── MODULO DE STORAGE — bucket para reportes PDF ─────────────────────────────
@@ -54,6 +86,7 @@ module "storage_reports" {
   environment  = var.environment
   project_name = var.project_name
   bucket_name  = "reports"
+  kms_key_arn  = module.secrets.kms_key_arn
 }
 
 # ─── MODULO DE BASE DE DATOS — RDS MySQL ───────────────────────────────────────
@@ -69,6 +102,7 @@ module "database" {
   subnet_ids     = module.network.private_subnet_ids
   vpc_id         = module.network.vpc_id
   db_sg_id       = module.network.db_sg_id
+  kms_key_arn    = module.secrets.kms_key_arn
 }
 
 # ─── MODULO DE COMPUTO — Lambda API ────────────────────────────────────────────
@@ -79,6 +113,8 @@ module "compute" {
   name                   = "api"
   memory_size            = 512
   timeout                = 30
+  api_role_arn           = module.iam.lambda_api_role_arn
+  worker_role_arn        = module.iam.lambda_worker_role_arn
   s3_bucket_arn          = module.storage_files.bucket_arn
   s3_bucket_name         = module.storage_files.bucket_name
   s3_reports_bucket_arn  = module.storage_reports.bucket_arn
@@ -86,7 +122,7 @@ module "compute" {
   db_host                = module.database.db_endpoint
   db_name                = module.database.db_name
   db_username            = var.db_username
-  db_password            = var.db_password
+  db_secret_arn          = module.secrets.secret_arn
   subnet_ids             = module.network.private_subnet_ids
   security_group_ids     = [module.network.app_sg_id]
 
@@ -123,6 +159,9 @@ module "scheduler" {
 
   project_name        = var.project_name
   environment         = var.environment
+  cleanup_role_arn    = module.iam.lambda_cleanup_role_arn
+  scheduler_role_arn  = module.iam.scheduler_exec_role_arn
+  scheduler_role_id   = module.iam.scheduler_exec_role_id
   schedule_expression = var.schedule_expression
   scheduler_timezone  = var.scheduler_timezone
   stale_hours         = var.stale_hours
@@ -131,6 +170,6 @@ module "scheduler" {
   db_host             = module.database.db_endpoint
   db_name             = module.database.db_name
   db_username         = var.db_username
-  db_password         = var.db_password
+  db_secret_arn       = module.secrets.secret_arn
   pymysql_layer_arn   = module.compute.pymysql_layer_arn
 }

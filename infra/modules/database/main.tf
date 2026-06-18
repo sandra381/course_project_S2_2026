@@ -46,6 +46,7 @@ resource "aws_db_instance" "this" {
   vpc_security_group_ids = [var.db_sg_id]
 
   storage_encrypted   = true
+  kms_key_id          = var.kms_key_arn
   multi_az            = var.multi_az
   skip_final_snapshot = true
 

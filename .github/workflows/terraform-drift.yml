@@ -2,12 +2,10 @@ name: Terraform Drift Detection
 
 # ─── CORRE AUTOMATICAMENTE TODOS LOS DIAS ─────────────────────────────────────
 # Detecta si alguien modificó recursos en AWS fuera de Terraform.
-# Si terraform plan devuelve exit code 2 (hay cambios), el job falla
-# y publica el output en el summary para que los graders lo puedan ver.
 on:
   schedule:
-    - cron: "0 8 * * *"   # Todos los días a las 8am UTC (2am Guatemala)
-  workflow_dispatch:       # También se puede disparar manualmente para probar
+    - cron: "0 8 * * *"  # Todos los días a las 8am UTC (2am Guatemala)
+  workflow_dispatch:      # También se puede disparar manualmente
 
 jobs:
   terraform-drift:
@@ -16,6 +14,7 @@ jobs:
 
     permissions:
       contents: read
+      id-token: write  # requerido para OIDC token exchange
 
     steps:
       - name: Checkout repository
@@ -26,12 +25,11 @@ jobs:
         with:
           terraform_version: "~> 1.8"
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials — OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
+          aws-region:     ${{ secrets.AWS_REGION }}
 
       - name: Terraform Init
         run: |
@@ -56,7 +54,6 @@ jobs:
         continue-on-error: true
 
       # ── Publicar output en el summary de GitHub Actions ───────────────────────
-      # Esto permite que los graders vean qué drifteó sin acceso al repo.
       - name: Publish Plan to Job Summary
         run: |
           echo "## 🔍 Terraform Drift Detection — $(date -u '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY

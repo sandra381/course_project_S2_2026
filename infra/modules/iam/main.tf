@@ -327,8 +327,6 @@ resource "aws_iam_role" "ci_runner" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          # Scoped al repo específico, rama main únicamente
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main"
         }
         StringLike = {
           "token.actions.githubusercontent.com:sub" = [

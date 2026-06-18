@@ -331,6 +331,7 @@ resource "aws_iam_role" "ci_runner" {
         StringLike = {
           "token.actions.githubusercontent.com:sub" = "repo:${var.github_org}/${var.github_repo}:*"
         }
+        }
       }
     }]
   })

@@ -454,6 +454,8 @@ resource "aws_iam_role_policy" "ci_runner_ec2" {
           "ec2:DescribeInternetGateways",
           "ec2:DescribeRouteTables",
           "ec2:DescribeNatGateways",
+          "ec2:DescribeAddressesAttribute",
+          "ec2:DescribeNetworkAcls",
           "ec2:DescribeAddresses",
           "ec2:DescribeAvailabilityZones",
           "ec2:DescribeNetworkInterfaces",
@@ -621,6 +623,7 @@ resource "aws_iam_role_policy" "ci_runner_s3_app" {
           "s3:PutBucketVersioning",
           "s3:GetEncryptionConfiguration",
           "s3:PutEncryptionConfiguration",
+          "s3:GetBucketAcl",
           "s3:GetBucketPublicAccessBlock",
           "s3:PutBucketPublicAccessBlock",
           "s3:GetBucketPolicy",
@@ -669,7 +672,7 @@ resource "aws_iam_role_policy" "ci_runner_sqs" {
         "sqs:UntagQueue",
         "sqs:GetQueueUrl"
       ]
-      Resource = "arn:aws:sqs:${local.region}:${local.account_id}:${var.project_name}-*"
+      Resource = "arn:aws:sqs:${local.region}:${local.account_id}:*"
     }]
   })
 }
@@ -834,6 +837,7 @@ resource "aws_iam_role_policy" "ci_runner_secrets_kms" {
           "kms:ListAliases",
           "kms:ListKeys",
           "kms:TagResource",
+          "kms:ListResourceTags",
           "kms:UntagResource",
           "kms:ScheduleKeyDeletion",
           "kms:CancelKeyDeletion",

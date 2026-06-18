@@ -147,3 +147,27 @@ variable "stale_hours" {
   type        = number
   default     = 2
 }
+
+variable "github_org" {
+  description = "GitHub organization or username that owns the repository. Used to scope the OIDC trust policy to a specific repository."
+  type        = string
+  default     = "sandra381"
+}
+
+variable "github_repo" {
+  description = "GitHub repository name. Used in the OIDC trust policy condition: repo:<org>/<repo>:ref:refs/heads/main."
+  type        = string
+  default     = "course_project_S2_2026"
+}
+
+variable "tf_state_bucket_name" {
+  description = "Name of the S3 bucket used for Terraform remote state (created in infra/bootstrap/). Required by the CI runner IAM policy."
+  type        = string
+  default     = "oyd-project-terraform-state-2026"
+}
+
+variable "tf_lock_table_name" {
+  description = "Name of the DynamoDB table used for Terraform state locking (created in infra/bootstrap/). Required by the CI runner IAM policy."
+  type        = string
+  default     = "oyd-project-terraform-locks-2026"
+}

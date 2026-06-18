@@ -8,7 +8,6 @@ from datetime import datetime
 DB_HOST           = os.environ["DB_HOST"].split(":")[0]
 DB_NAME           = os.environ["DB_NAME"]
 DB_USER           = os.environ["DB_USER"]
-DB_PASSWORD       = os.environ["DB_PASSWORD"]
 S3_BUCKET         = os.environ["S3_BUCKET_NAME"]
 S3_REPORTS_BUCKET = os.environ["S3_REPORTS_BUCKET"]
 SQS_QUEUE_URL     = os.environ["SQS_QUEUE_URL"]
@@ -16,6 +15,10 @@ SQS_QUEUE_URL     = os.environ["SQS_QUEUE_URL"]
 s3  = boto3.client("s3")
 sqs = boto3.client("sqs")
 
+_sm = boto3.client("secretsmanager")
+DB_PASSWORD = _sm.get_secret_value(
+    SecretId=os.environ["DB_SECRET_ARN"]
+)["SecretString"]
 
 def get_db_connection():
     return pymysql.connect(

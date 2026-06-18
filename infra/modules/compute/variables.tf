@@ -50,10 +50,9 @@ variable "db_username" {
   type        = string
 }
 
-variable "db_password" {
-  description = "Password to connect to the RDS instance. Must not appear in any committed file."
+variable "db_secret_arn" {
+  description = "ARN of the Secrets Manager secret storing the DB password. Injected as DB_SECRET_ARN env var. Provided by module.secrets.secret_arn."
   type        = string
-  sensitive   = true
 }
 
 variable "subnet_ids" {
@@ -101,5 +100,15 @@ variable "sqs_queue_url" {
 
 variable "s3_reports_bucket_arn" {
   description = "ARN del bucket S3 donde Lambda Worker guarda los reportes PDF generados. Se usa en la política IAM para dar permisos de escritura a Lambda Worker."
+  type        = string
+}
+
+variable "api_role_arn" {
+  description = "ARN of the IAM execution role for Lambda API. Provided by module.iam.lambda_api_role_arn."
+  type        = string
+}
+
+variable "worker_role_arn" {
+  description = "ARN of the IAM execution role for Lambda Worker. Provided by module.iam.lambda_worker_role_arn."
   type        = string
 }

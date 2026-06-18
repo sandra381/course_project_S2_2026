@@ -335,7 +335,7 @@ resource "aws_iam_role" "ci_runner" {
         }
       }
     ]
-  })  
+  })
 
   tags = {
     Name      = "${local.prefix}-ci-runner-role"

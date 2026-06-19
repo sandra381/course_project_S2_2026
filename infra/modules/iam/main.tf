@@ -15,12 +15,11 @@ locals {
 # Permite que GitHub Actions asuma roles de AWS sin credenciales de larga vida.
 # ═══════════════════════════════════════════════════════════════════════════════
 resource "aws_iam_openid_connect_provider" "github" {
+  count = var.create_oidc_provider ? 1 : 0
+
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
 
-  # Thumbprints oficiales de GitHub Actions OIDC (actualizados 2023).
-  # AWS valida los tokens contra su propio trust store desde 2023,
-  # pero el campo es requerido por el recurso.
   thumbprint_list = [
     "6938fd4d98bab03faadb97b34396831e3780aea1",
     "1c58a3a8518e8759bf075b76b750d4f2df264fcd"
@@ -30,6 +29,15 @@ resource "aws_iam_openid_connect_provider" "github" {
     Name      = "${local.prefix}-github-oidc-provider"
     ManagedBy = "terraform"
   }
+}
+
+data "aws_iam_openid_connect_provider" "existing" {
+  count = var.create_oidc_provider ? 0 : 1
+  url   = "https://token.actions.githubusercontent.com"
+}
+
+locals {
+  oidc_provider_arn = var.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.existing[0].arn
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -323,7 +331,7 @@ resource "aws_iam_role" "ci_runner" {
         Effect = "Allow"
         Action = "sts:AssumeRoleWithWebIdentity"
         Principal = {
-          Federated = aws_iam_openid_connect_provider.github.arn
+          Federated = local.oidc_provider_arn
         }
         Condition = {
           StringEquals = {
@@ -419,7 +427,7 @@ resource "aws_iam_role_policy" "ci_runner_iam" {
           "iam:DeleteOpenIDConnectProvider",
           "iam:GetOpenIDConnectProvider",
           "iam:TagOpenIDConnectProvider",
-          "iam:ListOpenIDConnectProviders"
+          "iam:ListInstanceProfilesForRole"
         ]
         # Scoped al prefijo del proyecto para evitar acceso a otros roles
         Resource = [
@@ -905,6 +913,15 @@ resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
         Effect = "Allow"
         Action = [
           "kms:ListResourceTags"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMReadExtra"
+        Effect = "Allow"
+        Action = [
+          "iam:ListOpenIDConnectProviders",
+          "iam:GetOpenIDConnectProvider"
         ]
         Resource = "*"
       }

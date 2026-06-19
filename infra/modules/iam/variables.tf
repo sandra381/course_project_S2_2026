@@ -51,3 +51,9 @@ variable "tf_lock_table_name" {
   description = "Name of the DynamoDB table used for Terraform state locking (created in bootstrap workspace). Used in the CI runner policy."
   type        = string
 }
+
+variable "create_oidc_provider" {
+  description = "Whether to create the GitHub OIDC provider. Should be true only in one environment (dev), since the provider is account-wide and shared across all environments."
+  type        = bool
+  default     = true
+}

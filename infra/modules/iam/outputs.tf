@@ -56,5 +56,5 @@ output "ci_runner_role_arn" {
 # ─── OIDC PROVIDER ────────────────────────────────────────────────────────────
 output "github_oidc_provider_arn" {
   description = "ARN of the GitHub Actions OIDC provider created in this module."
-  value       = aws_iam_openid_connect_provider.github.arn
+  value       = local.oidc_provider_arn
 }

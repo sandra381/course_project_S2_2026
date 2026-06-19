@@ -863,118 +863,89 @@ resource "aws_iam_role_policy_attachment" "ci_runner_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 
-/** resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
-  name = "${local.prefix}-ci-readonly-extra"
+resource "aws_iam_role_policy" "ci_runner_dns_tls_observability" {
+  name = "${local.prefix}-ci-dns-tls-observability"
   role = aws_iam_role.ci_runner.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3ReadExtra"
+        Sid    = "ACMManage"
         Effect = "Allow"
         Action = [
-          "s3:GetAccelerateConfiguration",
-          "s3:GetBucketAcl",
-          "s3:GetBucketLogging",
-          "s3:GetBucketObjectLockConfiguration",
-          "s3:GetBucketRequestPayment",
-          "s3:GetReplicationConfiguration",
-          "s3:GetBucketOwnershipControls"
-        ]
-        Resource = [
-          "arn:aws:s3:::${var.project_name}-*"
-        ]
-      },
-      {
-        Sid    = "SQSReadExtra"
-        Effect = "Allow"
-        Action = [
-          "sqs:ListQueueTags",
-          "sqs:GetQueueAttributes"
+          "acm:RequestCertificate",
+          "acm:DeleteCertificate",
+          "acm:AddTagsToCertificate",
+          "acm:RemoveTagsFromCertificate"
         ]
         Resource = "*"
       },
       {
-        Sid    = "SecretsReadExtra"
+        Sid    = "Route53Manage"
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetResourcePolicy"
-        ]
-        Resource = "arn:aws:secretsmanager:${local.region}:${local.account_id}:secret:${var.project_name}-*"
-      },
-      {
-        Sid    = "EC2ReadExtra"
-        Effect = "Allow"
-        Action = [
-          "ec2:DescribeAddressesAttribute",
-          "ec2:DescribeNetworkAcls",
-          "ec2:DescribeTags"
+          "route53:CreateHostedZone",
+          "route53:DeleteHostedZone",
+          "route53:ChangeResourceRecordSets",
+          "route53:ChangeTagsForResource"
         ]
         Resource = "*"
       },
       {
-        Sid    = "KMSReadExtra"
+        Sid    = "LogsManage"
         Effect = "Allow"
         Action = [
-          "kms:ListResourceTags"
+          "logs:CreateLogGroup",
+          "logs:DeleteLogGroup",
+          "logs:PutRetentionPolicy",
+          "logs:TagLogGroup",
+          "logs:TagResource",
+          "logs:UntagResource"
+        ]
+        Resource = "arn:aws:logs:${local.region}:${local.account_id}:log-group:/*"
+      },
+      {
+        Sid    = "CloudFrontManage"
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateDistribution",
+          "cloudfront:UpdateDistribution",
+          "cloudfront:DeleteDistribution",
+          "cloudfront:TagResource",
+          "cloudfront:UntagResource"
         ]
         Resource = "*"
       },
       {
-        Sid    = "IAMReadExtra"
+        Sid    = "SNSManage"
         Effect = "Allow"
         Action = [
-          "iam:ListOpenIDConnectProviders",
-          "iam:GetOpenIDConnectProvider"
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:TagResource",
+          "sns:UntagResource"
+        ]
+        Resource = "arn:aws:sns:${local.region}:${local.account_id}:${var.project_name}-*"
+      },
+      {
+        Sid    = "CloudWatchAlarmsManage"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:TagResource",
+          "cloudwatch:UntagResource"
         ]
         Resource = "*"
       },
       {
-        Sid    = "ACMReadExtra"
+        Sid    = "BudgetsManage"
         Effect = "Allow"
         Action = [
-          "acm:DescribeCertificate",
-          "acm:ListCertificates",
-          "acm:ListTagsForCertificate"
+          "budgets:TagResource",
+          "budgets:UntagResource"
         ]
         Resource = "*"
-      },
-      {
-        Sid    = "Route53ReadExtra"
-        Effect = "Allow"
-        Action = [
-          "route53:GetHostedZone",
-          "route53:ListHostedZones",
-          "route53:ListResourceRecordSets",
-          "route53:ListTagsForResource"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "LogsReadExtra"
-        Effect = "Allow"
-        Action = [
-          "logs:DescribeLogGroups",
-          "logs:ListTagsLogGroup",
-          "logs:ListTagsForResource"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "SNSReadExtra"
-        Effect = "Allow"
-        Action = [
-          "SNS:ListTagsForResource",
-          "SNS:GetTopicAttributes"
-        ]
-        Resource = "*"
-      },
-
-
-
-
-
+      }
     ]
   })
-}**/
+}

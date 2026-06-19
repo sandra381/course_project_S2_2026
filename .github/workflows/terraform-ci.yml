@@ -50,6 +50,9 @@ jobs:
         working-directory: infra/
 
   # ─── JOB 3a: PLAN — dev ───────────────────────────────────────────────────────
+  # Job separado de staging porque cada uno necesita declarar su propio
+  # "environment:" para poder leer su Environment secret correspondiente
+  # (DEV_DB_PASSWORD vive en el ambiente "dev", no es un Repository secret).
   terraform-plan-dev:
     name: Terraform Plan — dev
     runs-on: ubuntu-latest
@@ -71,7 +74,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
           aws-region:     ${{ secrets.AWS_REGION }}
-
       - name: Terraform Init — dev
         run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
@@ -100,7 +102,6 @@ jobs:
           retention-days: 5
 
       - name: Upload Plan Text — dev
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: plan-text-dev
@@ -133,9 +134,11 @@ jobs:
       - name: Terraform Init — staging
         run: terraform init -backend-config=envs/staging/backend-staging.hcl
         working-directory: infra/
-
-      # Nota: "exit ${PIPESTATUS[0]}" al final asegura que el step falle si
-      # terraform plan falla, en vez de reportar éxito basándose en "tee".
+      - name: Debug — Check Secret Length
+        env:
+          TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: |
+          echo "Largo de la contraseña: ${#TF_VAR_db_password} caracteres"    
       - name: Terraform Plan — staging
         id: plan-staging
         env:
@@ -157,7 +160,6 @@ jobs:
           retention-days: 5
 
       - name: Upload Plan Text — staging
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: plan-text-staging

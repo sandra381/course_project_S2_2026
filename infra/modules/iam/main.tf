@@ -844,7 +844,7 @@ resource "aws_iam_role_policy" "ci_runner_secrets_kms" {
           "kms:GetKeyRotationStatus",
           "kms:EnableKeyRotation"
         ]
-        Resource = "*" 
+        Resource = "*"
       }
     ]
   })

@@ -181,7 +181,24 @@ variable "create_oidc_provider" {
 variable "api_domain_name" {
   description = "Custom domain name for the public API, served via CloudFront with a valid ACM certificate."
   type        = string
-  default     = "api.grupo1.oyd.solid.com.gt"
+}
+
+variable "root_domain_name" {
+  description = "Delegated root domain managed in Route 53."
+  type        = string
+  default     = "grupo1.oyd.solid.com.gt"
+}
+
+variable "create_dns_zone" {
+  description = "Whether this environment should create the Route 53 hosted zone. Only one environment should create it."
+  type        = bool
+  default     = false
+}
+
+variable "hosted_zone_id" {
+  description = "Existing Route 53 hosted zone ID to reuse when create_dns_zone is false."
+  type        = string
+  default     = null
 }
 
 variable "ssl_policy_name" {

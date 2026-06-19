@@ -10,7 +10,7 @@
 # ─── REGISTRO DNS — apunta el dominio público hacia CloudFront ──────────────
 # Reemplaza el registro anterior que apuntaba directo a API Gateway.
 resource "aws_route53_record" "api" {
-  zone_id = aws_route53_zone.subdomain.zone_id
+  zone_id = local.route53_zone_id
   name    = var.api_domain_name
   type    = "A"
 
@@ -24,5 +24,5 @@ resource "aws_route53_record" "api" {
 # ─── OUTPUT ───────────────────────────────────────────────────────────────────
 output "custom_domain_url" {
   description = "Public HTTPS URL using the custom domain, served through CloudFront with HTTP->HTTPS redirect."
-  value       = "https://api.grupo1.oyd.solid.com.gt"
+  value       = "https://${var.api_domain_name}/"
 }

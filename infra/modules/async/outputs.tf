@@ -8,6 +8,11 @@ output "queue_arn" {
   value       = aws_sqs_queue.main.arn
 }
 
+output "queue_name" {
+  description = "Name of the main SQS queue. Used by the observability module to reference the queue in alarms and dashboard widgets."
+  value       = aws_sqs_queue.main.name
+}
+
 output "dlq_url" {
   description = "URL de la Dead Letter Queue spvr-jobs-dlq. Para inspección manual de mensajes fallidos desde la consola AWS."
   value       = aws_sqs_queue.dlq.url

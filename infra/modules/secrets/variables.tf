@@ -28,3 +28,17 @@ variable "lambda_cleanup_role_name" {
   description = "Name of the Lambda Cleanup IAM role. Used to grant GetSecretValue and KMS Decrypt permissions."
   type        = string
 }
+variable "lambda_api_role_arn" {
+  description = "ARN of the Lambda API IAM role. Used in the KMS key policy LambdaDecrypt statement."
+  type        = string
+}
+
+variable "lambda_worker_role_arn" {
+  description = "ARN of the Lambda Worker IAM role. Used in the KMS key policy LambdaDecrypt statement."
+  type        = string
+}
+
+variable "lambda_cleanup_role_arn" {
+  description = "ARN of the Lambda Cleanup IAM role. Used in the KMS key policy LambdaDecrypt statement."
+  type        = string
+}

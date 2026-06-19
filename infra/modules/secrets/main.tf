@@ -2,20 +2,6 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-# Lookup de los roles IAM para obtener sus ARNs a partir del nombre.
-# Estos roles ya existen porque el módulo IAM corre antes que este.
-data "aws_iam_role" "lambda_api" {
-  name = var.lambda_api_role_name
-}
-
-data "aws_iam_role" "lambda_worker" {
-  name = var.lambda_worker_role_name
-}
-
-data "aws_iam_role" "lambda_cleanup" {
-  name = var.lambda_cleanup_role_name
-}
-
 locals {
   prefix     = "${var.project_name}-${var.environment}"
   account_id = data.aws_caller_identity.current.account_id
@@ -67,9 +53,9 @@ resource "aws_kms_key" "main" {
         Effect = "Allow"
         Principal = {
           AWS = [
-            data.aws_iam_role.lambda_api.arn,
-            data.aws_iam_role.lambda_worker.arn,
-            data.aws_iam_role.lambda_cleanup.arn
+            var.lambda_api_role_arn,
+            var.lambda_worker_role_arn,
+            var.lambda_cleanup_role_arn
           ]
         }
         # Solo Decrypt y GenerateDataKey — no pueden administrar la llave
@@ -111,11 +97,11 @@ resource "aws_kms_alias" "main" {
   name          = "alias/${local.prefix}-cmk"
   target_key_id = aws_kms_key.main.key_id
 }
+
 resource "time_sleep" "kms_propagation" {
   depends_on      = [aws_kms_key.main, aws_kms_alias.main]
   create_duration = "15s"
 }
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECRETS MANAGER — contraseña de base de datos

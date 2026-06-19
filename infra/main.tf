@@ -14,6 +14,7 @@ module "iam" {
 
   tf_state_bucket_name = var.tf_state_bucket_name
   tf_lock_table_name   = var.tf_lock_table_name
+  create_oidc_provider = var.create_oidc_provider
 }
 
 # ─── MODULO SECRETS — KMS + Secrets Manager (Delivery 5) ─────────────────────

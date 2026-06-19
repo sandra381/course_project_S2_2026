@@ -171,3 +171,9 @@ variable "tf_lock_table_name" {
   type        = string
   default     = "oyd-project-terraform-locks-2026"
 }
+
+variable "create_oidc_provider" {
+  description = "Whether to create the GitHub OIDC provider. Should be true only in dev (default), since the provider is account-wide and shared."
+  type        = bool
+  default     = true
+}

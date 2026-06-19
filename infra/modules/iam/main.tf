@@ -858,7 +858,12 @@ resource "aws_iam_role_policy" "ci_runner_secrets_kms" {
   })
 }
 
-resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
+resource "aws_iam_role_policy_attachment" "ci_runner_readonly" {
+  role       = aws_iam_role.ci_runner.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+/** resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
   name = "${local.prefix}-ci-readonly-extra"
   role = aws_iam_role.ci_runner.id
 
@@ -964,7 +969,12 @@ resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
           "SNS:GetTopicAttributes"
         ]
         Resource = "*"
-      }
+      },
+
+
+
+
+
     ]
   })
-}
+}**/

@@ -23,3 +23,11 @@ bisect_batch_on_function_error     = true
 schedule_expression = "rate(1 hour)"
 scheduler_timezone  = "America/Guatemala"
 stale_hours         = 2
+
+create_oidc_provider = false
+
+alarm_notification_email = "sandra.soria@galileo.edu"
+api_domain_name          = "api-staging.grupo1.oyd.solid.com.gt"
+root_domain_name         = "grupo1.oyd.solid.com.gt"
+create_dns_zone          = false
+hosted_zone_id           = "Z09673581TIXT01P7MFT9"

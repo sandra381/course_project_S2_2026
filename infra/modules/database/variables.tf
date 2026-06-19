@@ -50,3 +50,8 @@ variable "db_sg_id" {
   description = "ID of the database security group created by the network module."
   type        = string
 }
+
+variable "kms_key_arn" {
+  description = "ARN of the KMS CMK used to encrypt the RDS instance. Provided by module.secrets.kms_key_arn."
+  type        = string
+}

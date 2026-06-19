@@ -8,11 +8,15 @@ from datetime import datetime, timedelta
 DB_HOST     = os.environ["DB_HOST"].split(":")[0]
 DB_NAME     = os.environ["DB_NAME"]
 DB_USER     = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
+
 
 # Jobs que lleven más de estas horas en PENDIENTE o PROCESANDO se marcan FALLIDO
 STALE_HOURS = int(os.environ.get("STALE_HOURS", "2"))
 
+_sm = boto3.client("secretsmanager")
+DB_PASSWORD = _sm.get_secret_value(
+    SecretId=os.environ["DB_SECRET_ARN"]
+)["SecretString"]
 
 def get_db_connection():
     return pymysql.connect(

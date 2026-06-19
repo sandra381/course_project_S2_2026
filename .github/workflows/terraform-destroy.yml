@@ -51,10 +51,11 @@ jobs:
         working-directory: infra/
 
       - name: Terraform Destroy
+        env:
+          TF_VAR_db_password: ${{ secrets.DEV_DB_PASSWORD }}
         run: |
           terraform destroy \
             -var-file=envs/dev/dev.tfvars \
-            -var="db_password=${{ secrets.DEV_DB_PASSWORD }}" \
             -auto-approve
         working-directory: infra/
 
@@ -93,9 +94,10 @@ jobs:
         working-directory: infra/
 
       - name: Terraform Destroy
+        env:
+          TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}
         run: |
           terraform destroy \
             -var-file=envs/staging/staging.tfvars \
-            -var="db_password=${{ secrets.STAGING_DB_PASSWORD }}" \
             -auto-approve
         working-directory: infra/

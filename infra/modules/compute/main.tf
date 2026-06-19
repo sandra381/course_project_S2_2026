@@ -1,7 +1,8 @@
 # ─── EMPAQUETAR LAMBDA API ─────────────────────────────────────────────────────
 data "archive_file" "lambda_api_zip" {
-  type        = "zip"
-  output_path = "${path.module}/lambda_api.zip"
+  type             = "zip"
+  output_path      = "${path.module}/lambda_api.zip"
+  output_file_mode = "0666"
 
   source {
     content  = file("${path.module}/handler_api.py")
@@ -11,76 +12,14 @@ data "archive_file" "lambda_api_zip" {
 
 # ─── EMPAQUETAR LAMBDA WORKER ──────────────────────────────────────────────────
 data "archive_file" "lambda_worker_zip" {
-  type        = "zip"
-  output_path = "${path.module}/lambda_worker.zip"
+  type             = "zip"
+  output_path      = "${path.module}/lambda_worker.zip"
+  output_file_mode = "0666"
 
   source {
     content  = file("${path.module}/handler_worker.py")
     filename = "handler_worker.py"
   }
-}
-
-# ─── IAM ROLE (compartido) ─────────────────────────────────────────────────────
-resource "aws_iam_role" "lambda_exec" {
-  name = "${var.project_name}-${var.environment}-lambda-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = { Service = "lambda.amazonaws.com" }
-    }]
-  })
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-lambda-role"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "terraform"
-  }
-}
-
-# ─── IAM POLICY — S3 ───────────────────────────────────────────────────────────
-resource "aws_iam_role_policy" "lambda_s3" {
-  name = "${var.project_name}-${var.environment}-lambda-s3-policy"
-  role = aws_iam_role.lambda_exec.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject"
-        ]
-        Resource = "${var.s3_bucket_arn}/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject"
-        ]
-        Resource = "${var.s3_reports_bucket_arn}/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "arn:aws:logs:*:*:*"
-      }
-    ]
-  })
-}
-
-# ─── IAM POLICY — VPC ──────────────────────────────────────────────────────────
-resource "aws_iam_role_policy_attachment" "lambda_vpc" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 # ─── LAMBDA LAYER — pymysql ────────────────────────────────────────────────────
@@ -94,7 +33,7 @@ resource "aws_lambda_layer_version" "pymysql" {
 # ─── LAMBDA API ────────────────────────────────────────────────────────────────
 resource "aws_lambda_function" "api" {
   function_name    = "${var.project_name}-${var.environment}-api"
-  role             = aws_iam_role.lambda_exec.arn
+  role             = var.api_role_arn
   handler          = "handler_api.handler"
   runtime          = "python3.12"
   memory_size      = var.memory_size
@@ -118,7 +57,7 @@ resource "aws_lambda_function" "api" {
       DB_HOST           = var.db_host
       DB_NAME           = var.db_name
       DB_USER           = var.db_username
-      DB_PASSWORD       = var.db_password
+      DB_SECRET_ARN     = var.db_secret_arn
     }
   }
 
@@ -140,7 +79,7 @@ resource "aws_lambda_layer_version" "reportlab" {
 # ─── LAMBDA WORKER ─────────────────────────────────────────────────────────────
 resource "aws_lambda_function" "worker" {
   function_name    = "${var.project_name}-${var.environment}-worker"
-  role             = aws_iam_role.lambda_exec.arn
+  role             = var.worker_role_arn
   handler          = "handler_worker.handler"
   runtime          = "python3.12"
   memory_size      = var.memory_size
@@ -166,7 +105,7 @@ resource "aws_lambda_function" "worker" {
       DB_HOST           = var.db_host
       DB_NAME           = var.db_name
       DB_USER           = var.db_username
-      DB_PASSWORD       = var.db_password
+      DB_SECRET_ARN     = var.db_secret_arn
       S3_REPORTS_BUCKET = var.s3_reports_bucket_name
       SQS_QUEUE_URL     = var.sqs_queue_url
     }
@@ -178,28 +117,6 @@ resource "aws_lambda_function" "worker" {
     Project     = var.project_name
     ManagedBy   = "terraform"
   }
-}
-
-# ─── IAM POLICY — SQS ────────────────────────────────────────────────────
-resource "aws_iam_role_policy" "lambda_sqs" {
-  name = "${var.project_name}-${var.environment}-lambda-sqs-policy"
-  role = aws_iam_role.lambda_exec.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes",
-          "sqs:SendMessage"
-        ]
-        Resource = var.sqs_queue_arn
-      }
-    ]
-  })
 }
 
 # ─── EVENT SOURCE MAPPING — SQS → Lambda Worker  ─────────────────────────

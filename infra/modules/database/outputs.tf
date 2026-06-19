@@ -17,3 +17,8 @@ output "security_group_id" {
   description = "ID of the security group attached to the RDS instance"
   value       = var.db_sg_id
 }
+
+output "db_instance_arn" {
+  description = "ARN of the RDS database instance. Consumed by infra/modules/iam/ to scope the compute role's RDS permissions."
+  value       = aws_db_instance.this.arn
+}

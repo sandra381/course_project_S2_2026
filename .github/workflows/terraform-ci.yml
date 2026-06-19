@@ -74,7 +74,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
           aws-region:     ${{ secrets.AWS_REGION }}
-
       - name: Terraform Init — dev
         run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
@@ -130,7 +129,11 @@ jobs:
       - name: Terraform Init — staging
         run: terraform init -backend-config=envs/staging/backend-staging.hcl
         working-directory: infra/
-
+      - name: Debug — Check Secret Length
+        env:
+          TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: |
+          echo "Largo de la contraseña: ${#TF_VAR_db_password} caracteres"    
       - name: Terraform Plan — staging
         id: plan-staging
         env:

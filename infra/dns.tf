@@ -1,6 +1,7 @@
-# ─── ROUTE 53 HOSTED ZONE — subdominio delegado por el ingeniero ─────────────
 resource "aws_route53_zone" "subdomain" {
-  name = "grupo1.oyd.solid.com.gt"
+  count = var.create_dns_zone ? 1 : 0
+
+  name = var.root_domain_name
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-zone"
@@ -10,13 +11,16 @@ resource "aws_route53_zone" "subdomain" {
   }
 }
 
-# ─── OUTPUT — Name Servers ─────────────────────────────────────────────────────
+locals {
+  route53_zone_id = var.create_dns_zone ? aws_route53_zone.subdomain[0].zone_id : var.hosted_zone_id
+}
+
 output "name_servers" {
-  description = "Name servers de la zona Route 53."
-  value       = aws_route53_zone.subdomain.name_servers
+  description = "Name servers of the Route 53 hosted zone. Only populated when this environment creates the zone."
+  value       = var.create_dns_zone ? aws_route53_zone.subdomain[0].name_servers : []
 }
 
 output "zone_id" {
-  description = "ID de la hosted zone. Se usa para crear registros DNS (validación de certificados ACM, etc.) dentro de este subdominio."
-  value       = aws_route53_zone.subdomain.zone_id
+  description = "Route 53 hosted zone ID used to create DNS records."
+  value       = local.route53_zone_id
 }

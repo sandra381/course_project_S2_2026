@@ -102,7 +102,6 @@ jobs:
       - name: Terraform Init — staging
         run: terraform init -reconfigure -backend-config=envs/staging/backend-staging.hcl
         working-directory: infra/
-
       - name: Debug — Check Secret Length
         env:
           TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}

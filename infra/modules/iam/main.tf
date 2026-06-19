@@ -25,6 +25,10 @@ resource "aws_iam_openid_connect_provider" "github" {
     "1c58a3a8518e8759bf075b76b750d4f2df264fcd"
   ]
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
     Name      = "${local.prefix}-github-oidc-provider"
     ManagedBy = "terraform"
@@ -323,6 +327,10 @@ resource "aws_iam_role" "scheduler_exec" {
 # ═══════════════════════════════════════════════════════════════════════════════
 resource "aws_iam_role" "ci_runner" {
   name = "${local.prefix}-ci-runner-role"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

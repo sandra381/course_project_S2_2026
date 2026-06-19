@@ -177,3 +177,81 @@ variable "create_oidc_provider" {
   type        = bool
   default     = true
 }
+
+variable "api_domain_name" {
+  description = "Custom domain name for the public API, served via CloudFront with a valid ACM certificate."
+  type        = string
+  default     = "api.grupo1.oyd.solid.com.gt"
+}
+
+variable "ssl_policy_name" {
+  description = "Minimum TLS protocol version enforced by CloudFront for HTTPS connections."
+  type        = string
+  default     = "TLSv1.2_2021"
+}
+
+variable "redirect_http_to_https" {
+  description = "CloudFront viewer protocol policy. 'redirect-to-https' enforces HTTP 301 redirect to HTTPS as required by Deliverable D."
+  type        = string
+  default     = "redirect-to-https"
+}
+
+# Observability variables
+variable "log_retention_days" {
+  description = "Number of days CloudWatch Logs retains log events before automatic expiration."
+  type        = number
+  default     = 14
+}
+
+variable "alarm_notification_email" {
+  description = "Email address that receives SNS notifications when an alarm or budget threshold triggers."
+  type        = string
+}
+
+variable "lambda_error_threshold" {
+  description = "Number of Lambda errors within the evaluation period that triggers the error-rate alarm."
+  type        = number
+  default     = 5
+}
+
+variable "lambda_error_evaluation_periods" {
+  description = "Number of consecutive periods the error threshold must be breached before the alarm fires."
+  type        = number
+  default     = 1
+}
+
+variable "lambda_error_period_seconds" {
+  description = "Length in seconds of each evaluation period for the Lambda error-rate alarm."
+  type        = number
+  default     = 300
+}
+
+variable "sqs_queue_depth_threshold" {
+  description = "Number of visible messages in the SQS queue that triggers the queue-depth alarm."
+  type        = number
+  default     = 50
+}
+
+variable "sqs_queue_depth_evaluation_periods" {
+  description = "Number of consecutive periods the queue-depth threshold must be breached before the alarm fires."
+  type        = number
+  default     = 2
+}
+
+variable "sqs_queue_depth_period_seconds" {
+  description = "Length in seconds of each evaluation period for the SQS queue-depth alarm."
+  type        = number
+  default     = 300
+}
+
+variable "monthly_budget_usd" {
+  description = "Monthly cost budget limit in USD for this project. Triggers a notification at 80% of this amount."
+  type        = number
+  default     = 20
+}
+
+variable "budget_notification_threshold_percent" {
+  description = "Percentage of the monthly budget that triggers the email notification."
+  type        = number
+  default     = 80
+}

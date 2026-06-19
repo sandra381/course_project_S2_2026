@@ -178,3 +178,36 @@ module "scheduler" {
   db_secret_arn       = module.secrets.secret_arn
   pymysql_layer_arn   = module.compute.pymysql_layer_arn
 }
+
+# ───MODULO OBSERVABILITY ───  
+module "observability" {
+  source = "./modules/observability"
+
+  environment  = var.environment
+  project_name = var.project_name
+
+  log_retention_days = var.log_retention_days
+
+  lambda_function_names = {
+    api     = module.compute.function_name
+    worker  = module.compute.worker_function_name
+    cleanup = module.scheduler.cleanup_function_name
+  }
+
+  alarm_notification_email = var.alarm_notification_email
+
+  lambda_error_threshold          = var.lambda_error_threshold
+  lambda_error_evaluation_periods = var.lambda_error_evaluation_periods
+  lambda_error_period_seconds     = var.lambda_error_period_seconds
+
+  sqs_queue_depth_threshold          = var.sqs_queue_depth_threshold
+  sqs_queue_depth_evaluation_periods = var.sqs_queue_depth_evaluation_periods
+  sqs_queue_depth_period_seconds     = var.sqs_queue_depth_period_seconds
+
+  api_gateway_id           = module.ingress.api_id
+  lambda_api_function_name = module.compute.function_name
+  sqs_queue_name           = module.async.queue_name
+
+  monthly_budget_usd                    = var.monthly_budget_usd
+  budget_notification_threshold_percent = var.budget_notification_threshold_percent
+}

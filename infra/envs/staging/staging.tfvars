@@ -25,3 +25,5 @@ scheduler_timezone  = "America/Guatemala"
 stale_hours         = 2
 
 create_oidc_provider = false
+
+alarm_notification_email = "sandra.soria@galileo.edu"

@@ -23,3 +23,5 @@ bisect_batch_on_function_error     = true
 schedule_expression = "rate(1 hour)"
 scheduler_timezone  = "America/Guatemala"
 stale_hours         = 2
+
+alarm_notification_email = "sandra.soria@galileo.edu"

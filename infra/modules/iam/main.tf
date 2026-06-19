@@ -427,8 +427,7 @@ resource "aws_iam_role_policy" "ci_runner_iam" {
           "iam:DeleteOpenIDConnectProvider",
           "iam:GetOpenIDConnectProvider",
           "iam:TagOpenIDConnectProvider",
-          "iam:ListInstanceProfilesForRole",
-          "iam:ListOpenIDConnectProviders"
+          "iam:ListInstanceProfilesForRole"
         ]
         # Scoped al prefijo del proyecto para evitar acceso a otros roles
         Resource = [
@@ -914,6 +913,15 @@ resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
         Effect = "Allow"
         Action = [
           "kms:ListResourceTags"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMReadExtra"
+        Effect = "Allow"
+        Action = [
+          "iam:ListOpenIDConnectProviders",
+          "iam:GetOpenIDConnectProvider"
         ]
         Resource = "*"
       }

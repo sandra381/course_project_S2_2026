@@ -1,7 +1,8 @@
 # ─── EMPAQUETAR LAMBDA CLEANUP ────────────────────────────────────────────────
 data "archive_file" "lambda_cleanup_zip" {
-  type        = "zip"
-  output_path = "${path.module}/lambda_cleanup.zip"
+  type             = "zip"
+  output_path      = "${path.module}/lambda_cleanup.zip"
+  output_file_mode = "0666"
 
   source {
     content  = file("${path.module}/handler_cleanup.py")

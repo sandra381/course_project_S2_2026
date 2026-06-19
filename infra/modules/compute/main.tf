@@ -1,7 +1,8 @@
 # ─── EMPAQUETAR LAMBDA API ─────────────────────────────────────────────────────
 data "archive_file" "lambda_api_zip" {
-  type        = "zip"
-  output_path = "${path.module}/lambda_api.zip"
+  type             = "zip"
+  output_path      = "${path.module}/lambda_api.zip"
+  output_file_mode = "0666"
 
   source {
     content  = file("${path.module}/handler_api.py")
@@ -11,8 +12,9 @@ data "archive_file" "lambda_api_zip" {
 
 # ─── EMPAQUETAR LAMBDA WORKER ──────────────────────────────────────────────────
 data "archive_file" "lambda_worker_zip" {
-  type        = "zip"
-  output_path = "${path.module}/lambda_worker.zip"
+  type             = "zip"
+  output_path      = "${path.module}/lambda_worker.zip"
+  output_file_mode = "0666"
 
   source {
     content  = file("${path.module}/handler_worker.py")

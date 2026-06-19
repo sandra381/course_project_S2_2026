@@ -71,16 +71,22 @@ jobs:
           aws-region:     ${{ secrets.AWS_REGION }}
 
       # ── Plan dev ──────────────────────────────────────────────────────────────
+      - name: Debug — Check Secret Length
+        env:
+          TF_VAR_db_password: ${{ secrets.DEV_DB_PASSWORD }}
+        run: |
+          echo "Largo de la contraseña: ${#TF_VAR_db_password} caracteres"
       - name: Terraform Init — dev
         run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
 
       - name: Terraform Plan — dev
         id: plan-dev
+        env:
+          TF_VAR_db_password: ${{ secrets.DEV_DB_PASSWORD }}
         run: |
           terraform plan \
             -var-file=envs/dev/dev.tfvars \
-            -var="db_password=${{ secrets.DEV_DB_PASSWORD }}" \
             -out=tfplan-dev \
             -no-color 2>&1 | tee plan-dev.txt
         working-directory: infra/
@@ -96,13 +102,19 @@ jobs:
       - name: Terraform Init — staging
         run: terraform init -reconfigure -backend-config=envs/staging/backend-staging.hcl
         working-directory: infra/
-
+        
+      - name: Debug — Check Secret Length
+        env:
+          TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: |
+          echo "Largo de la contraseña: ${#TF_VAR_db_password} caracteres"    
       - name: Terraform Plan — staging
         id: plan-staging
+        env:
+          TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}
         run: |
           terraform plan \
             -var-file=envs/staging/staging.tfvars \
-            -var="db_password=${{ secrets.STAGING_DB_PASSWORD }}" \
             -out=tfplan-staging \
             -no-color 2>&1 | tee plan-staging.txt
         working-directory: infra/

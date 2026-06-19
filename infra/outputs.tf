@@ -108,3 +108,53 @@ output "db_secret_name" {
   description = "Name of the Secrets Manager secret."
   value       = module.secrets.secret_name
 }
+output "observability_log_group_names" {
+  description = "Names of all CloudWatch log groups created for the Lambda functions."
+  value       = module.observability.log_group_names
+}
+
+output "observability_dashboard_url" {
+  description = "Direct console URL to view the CloudWatch dashboard."
+  value       = module.observability.dashboard_url
+}
+
+output "observability_sns_topic_arn" {
+  description = "ARN of the SNS topic used for alarm and budget notifications."
+  value       = module.observability.sns_topic_arn
+}
+
+output "observability_lambda_api_errors_alarm_arn" {
+  description = "ARN of the Lambda API error-rate alarm."
+  value       = module.observability.lambda_api_errors_alarm_arn
+}
+
+output "observability_sqs_queue_depth_alarm_arn" {
+  description = "ARN of the SQS queue-depth alarm."
+  value       = module.observability.sqs_queue_depth_alarm_arn
+}
+
+output "observability_budget_name" {
+  description = "Name of the monthly cost budget."
+  value       = module.observability.budget_name
+}
+
+# ─── IAM / CI RUNNER (Delivery 5 — Deliverable A/C evidence) ─────────────────
+output "ci_runner_role_arn" {
+  description = "ARN of the CI runner role assumable by GitHub Actions via OIDC."
+  value       = module.iam.ci_runner_role_arn
+}
+
+output "lambda_api_role_arn" {
+  description = "ARN of the Lambda API execution role."
+  value       = module.iam.lambda_api_role_arn
+}
+
+output "lambda_worker_role_arn" {
+  description = "ARN of the Lambda Worker execution role."
+  value       = module.iam.lambda_worker_role_arn
+}
+
+output "lambda_cleanup_role_arn" {
+  description = "ARN of the Lambda Cleanup execution role."
+  value       = module.iam.lambda_cleanup_role_arn
+}

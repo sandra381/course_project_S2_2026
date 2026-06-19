@@ -25,6 +25,10 @@ resource "aws_iam_openid_connect_provider" "github" {
     "1c58a3a8518e8759bf075b76b750d4f2df264fcd"
   ]
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
     Name      = "${local.prefix}-github-oidc-provider"
     ManagedBy = "terraform"
@@ -324,6 +328,10 @@ resource "aws_iam_role" "scheduler_exec" {
 resource "aws_iam_role" "ci_runner" {
   name = "${local.prefix}-ci-runner-role"
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -507,7 +515,14 @@ resource "aws_iam_role_policy" "ci_runner_ec2" {
           "ec2:CreateNetworkInterface",
           "ec2:DeleteNetworkInterface",
           "ec2:CreateTags",
-          "ec2:DeleteTags"
+          "ec2:DeleteTags",
+          "ec2:CreateNetworkAcl",
+          "ec2:DeleteNetworkAcl",
+          "ec2:CreateNetworkAclEntry",
+          "ec2:DeleteNetworkAclEntry",
+          "ec2:ReplaceNetworkAclEntry",
+          "ec2:ReplaceNetworkAclAssociation",
+          "ec2:AssociateNetworkAcl",
         ]
         Resource = "*"
       }

@@ -39,7 +39,7 @@ resource "aws_lambda_function" "api" {
   memory_size      = var.memory_size
   timeout          = var.timeout
   filename         = data.archive_file.lambda_api_zip.output_path
-  source_code_hash = data.archive_file.lambda_api_zip.output_base64sha256
+  source_code_hash = filebase64sha256("${path.module}/handler_api.py")
   layers           = [aws_lambda_layer_version.pymysql.arn]
 
   vpc_config {
@@ -85,7 +85,7 @@ resource "aws_lambda_function" "worker" {
   memory_size      = var.memory_size
   timeout          = var.timeout
   filename         = data.archive_file.lambda_worker_zip.output_path
-  source_code_hash = data.archive_file.lambda_worker_zip.output_base64sha256
+  source_code_hash = filebase64sha256("${path.module}/handler_worker.py")
 
   layers = [
     aws_lambda_layer_version.pymysql.arn,

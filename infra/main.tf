@@ -18,13 +18,17 @@ module "iam" {
 
 # ─── MODULO SECRETS — KMS + Secrets Manager (Delivery 5) ─────────────────────
 module "secrets" {
-  source = "./modules/secrets"
-
+  source       = "./modules/secrets"
   environment  = var.environment
   project_name = var.project_name
+  db_password  = var.db_password
 
-  db_password = var.db_password
+  # ARNs — agregar si faltan
+  lambda_api_role_arn     = module.iam.lambda_api_role_arn
+  lambda_worker_role_arn  = module.iam.lambda_worker_role_arn
+  lambda_cleanup_role_arn = module.iam.lambda_cleanup_role_arn
 
+  # Nombres — ya deberían estar
   lambda_api_role_name     = module.iam.lambda_api_role_name
   lambda_worker_role_name  = module.iam.lambda_worker_role_name
   lambda_cleanup_role_name = module.iam.lambda_cleanup_role_name

@@ -924,6 +924,46 @@ resource "aws_iam_role_policy" "ci_runner_readonly_extra" {
           "iam:GetOpenIDConnectProvider"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "ACMReadExtra"
+        Effect = "Allow"
+        Action = [
+          "acm:DescribeCertificate",
+          "acm:ListCertificates",
+          "acm:ListTagsForCertificate"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "Route53ReadExtra"
+        Effect = "Allow"
+        Action = [
+          "route53:GetHostedZone",
+          "route53:ListHostedZones",
+          "route53:ListResourceRecordSets",
+          "route53:ListTagsForResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "LogsReadExtra"
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:ListTagsLogGroup",
+          "logs:ListTagsForResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SNSReadExtra"
+        Effect = "Allow"
+        Action = [
+          "SNS:ListTagsForResource",
+          "SNS:GetTopicAttributes"
+        ]
+        Resource = "*"
       }
     ]
   })

@@ -50,9 +50,6 @@ jobs:
         working-directory: infra/
 
   # ─── JOB 3a: PLAN — dev ───────────────────────────────────────────────────────
-  # Job separado de staging porque cada uno necesita declarar su propio
-  # "environment:" para poder leer su Environment secret correspondiente
-  # (DEV_DB_PASSWORD vive en el ambiente "dev", no es un Repository secret).
   terraform-plan-dev:
     name: Terraform Plan — dev
     runs-on: ubuntu-latest
@@ -79,6 +76,9 @@ jobs:
         run: terraform init -backend-config=envs/dev/backend-dev.hcl
         working-directory: infra/
 
+      # Nota: "exit ${PIPESTATUS[0]}" al final asegura que el step falle si
+      # terraform plan falla, en vez de reportar éxito basándose en "tee"
+      # (que casi siempre sale con código 0 sin importar lo que pasó antes).
       - name: Terraform Plan — dev
         id: plan-dev
         env:
@@ -88,9 +88,11 @@ jobs:
             -var-file=envs/dev/dev.tfvars \
             -out=tfplan-dev \
             -no-color 2>&1 | tee plan-dev.txt
+          exit ${PIPESTATUS[0]}
         working-directory: infra/
 
       - name: Upload Plan Artifact — dev
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-dev
@@ -98,6 +100,7 @@ jobs:
           retention-days: 5
 
       - name: Upload Plan Text — dev
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: plan-text-dev
@@ -131,6 +134,8 @@ jobs:
         run: terraform init -backend-config=envs/staging/backend-staging.hcl
         working-directory: infra/
 
+      # Nota: "exit ${PIPESTATUS[0]}" al final asegura que el step falle si
+      # terraform plan falla, en vez de reportar éxito basándose en "tee".
       - name: Terraform Plan — staging
         id: plan-staging
         env:
@@ -140,9 +145,11 @@ jobs:
             -var-file=envs/staging/staging.tfvars \
             -out=tfplan-staging \
             -no-color 2>&1 | tee plan-staging.txt
+          exit ${PIPESTATUS[0]}
         working-directory: infra/
 
       - name: Upload Plan Artifact — staging
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-staging
@@ -150,6 +157,7 @@ jobs:
           retention-days: 5
 
       - name: Upload Plan Text — staging
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: plan-text-staging

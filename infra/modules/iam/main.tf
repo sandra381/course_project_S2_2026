@@ -515,7 +515,14 @@ resource "aws_iam_role_policy" "ci_runner_ec2" {
           "ec2:CreateNetworkInterface",
           "ec2:DeleteNetworkInterface",
           "ec2:CreateTags",
-          "ec2:DeleteTags"
+          "ec2:DeleteTags",
+          "ec2:CreateNetworkAcl",
+          "ec2:DeleteNetworkAcl",
+          "ec2:CreateNetworkAclEntry",
+          "ec2:DeleteNetworkAclEntry",
+          "ec2:ReplaceNetworkAclEntry",
+          "ec2:ReplaceNetworkAclAssociation",
+          "ec2:AssociateNetworkAcl",
         ]
         Resource = "*"
       }

@@ -102,7 +102,6 @@ jobs:
       - name: Terraform Init — staging
         run: terraform init -reconfigure -backend-config=envs/staging/backend-staging.hcl
         working-directory: infra/
-        
       - name: Debug — Check Secret Length
         env:
           TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}
@@ -202,6 +201,8 @@ jobs:
           run-id: ${{ steps.find-run.outputs.run_id }}
 
       - name: Terraform Apply
+        env:
+          TF_VAR_db_password: ${{ secrets.DEV_DB_PASSWORD }}
         run: terraform apply tfplan-dev
         working-directory: infra/
 
@@ -259,5 +260,7 @@ jobs:
           run-id: ${{ steps.find-run.outputs.run_id }}
 
       - name: Terraform Apply
+        env:
+          TF_VAR_db_password: ${{ secrets.STAGING_DB_PASSWORD }}  
         run: terraform apply tfplan-staging
         working-directory: infra/

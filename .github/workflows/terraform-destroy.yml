@@ -86,8 +86,7 @@ jobs:
 
       - name: Confirm Destroy Target
         run: |
-          echo "Destroying environment: staging"
-
+            echo "Destroying environment: staging"
       - name: Terraform Init
         run: |
           terraform init \

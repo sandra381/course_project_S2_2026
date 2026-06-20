@@ -3,7 +3,7 @@ import { C } from "../styles.js";
 import Card from "../components/Card.jsx";
 import Spinner from "../components/Spinner.jsx";
 import { StatusBadge } from "../components/Badge.jsx";
-import { getReports, getReportDownloadUrl, IS_DEMO } from "../api/client.js";
+import { getReports, getReportDownloadUrl, getReportCsvUrl, IS_DEMO } from "../api/client.js";
 import { DEMO_REPORTS } from "../api/demo.js";
 
 export default function History({ user, setPage, setSelectedReport }) {
@@ -24,7 +24,8 @@ export default function History({ user, setPage, setSelectedReport }) {
           await new Promise((r) => setTimeout(r, 400));
           setReports(DEMO_REPORTS);
         } else {
-          const data = await getReports();
+          const idUsuario = user.rol === "analista" ? user.id_usuario : null;
+          const data = await getReports(idUsuario);
           setReports(data.reports || []);
         }
       } catch (_) {
@@ -143,7 +144,19 @@ export default function History({ user, setPage, setSelectedReport }) {
                         </button>
                       )}
                       {isReadOnly && (
-                        <span style={{ fontSize: 11, color: C.slateL }}>Solo lectura</span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const { download_url } = await getReportCsvUrl(r.id_reporte);
+                              window.open(download_url, "_blank");
+                            } catch (e) {
+                              alert("Error al obtener el CSV original.");
+                            }
+                          }}
+                          style={{ fontSize: 12, color: C.blue, background: C.grayLt, border: "none", padding: "5px 12px", borderRadius: 6, cursor: "pointer" }}
+                        >
+                          Ver CSV original
+                        </button>
                       )}
                     </div>
                   </td>

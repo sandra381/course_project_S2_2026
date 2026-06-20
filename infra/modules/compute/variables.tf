@@ -117,3 +117,9 @@ variable "ses_sender_email" {
   description = "Email remitente verificado en SES para notificaciones de reportes."
   type        = string
 }
+
+variable "jwt_secret" {
+  description = "Secret key used to sign JWT tokens."
+  type        = string
+  sensitive   = true
+}

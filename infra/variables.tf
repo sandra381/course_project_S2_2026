@@ -272,3 +272,10 @@ variable "budget_notification_threshold_percent" {
   type        = number
   default     = 80
 }
+
+#------------Secrets para jwt----------------
+variable "jwt_secret" {
+  description = "Secret key used to sign JWT tokens for user authentication."
+  type        = string
+  sensitive   = true
+}

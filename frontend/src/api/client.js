@@ -55,8 +55,8 @@ export const login = (email, password) =>
 // ─────────────────────────────────────────────────────────────
 
 // GET /jobs — lista todos los trabajos
-export const getJobs = () =>
-  request("GET", "/jobs");
+export const getJobs = (idUsuario) =>
+  request("GET", idUsuario ? `/jobs?id_usuario=${idUsuario}` : "/jobs");
 
 // GET /jobs/:job_id — detalle de un trabajo específico (para polling de estado)
 export const getJob = (jobId) =>
@@ -86,8 +86,12 @@ export const enqueueJob = (jobId, idUsuario) =>
 // ─────────────────────────────────────────────────────────────
 
 // GET /reports — historial de reportes generados
-export const getReports = () =>
-  request("GET", "/reports");
+
+export const getReports = (idUsuario) =>
+  request("GET", idUsuario ? `/reports?id_usuario=${idUsuario}` : "/reports");
+
+export const getReportCsvUrl = (reportId) =>
+  request("GET", `/reports/${reportId}/csv`);
 
 // GET /reports/:id/download — URL firmada para descargar el PDF
 export const getReportDownloadUrl = (reportId) =>

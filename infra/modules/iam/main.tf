@@ -971,7 +971,7 @@ resource "aws_iam_role_policy" "ci_runner_dns_tls_observability" {
   })
 }
 
-resource "aws_iam_role_policy" "ci_runner_ses" {
+/* resource "aws_iam_role_policy" "ci_runner_ses" {
   name = "${local.prefix}-ci-ses"
   role = aws_iam_role.ci_runner.id
 
@@ -1005,5 +1005,45 @@ resource "aws_iam_role_policy" "ci_runner_ses" {
       }
     ]
   })
+}*/
+resource "aws_iam_policy" "ci_runner_ses" {
+  name        = "${local.prefix}-ci-ses"
+  description = "SES permissions for CI runner"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SESManage"
+        Effect = "Allow"
+        Action = [
+          "ses:VerifyEmailIdentity",
+          "ses:DeleteIdentity",
+          "ses:GetIdentityVerificationAttributes",
+          "ses:GetIdentityDkimAttributes",
+          "ses:GetIdentityNotificationAttributes",
+          "ses:GetIdentityMailFromDomainAttributes",
+          "ses:GetIdentityPolicies",
+          "ses:ListIdentities",
+          "ses:ListIdentityPolicies",
+          "ses:ListTagsForResource",
+          "ses:TagResource",
+          "ses:UntagResource",
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+          "ses:SetIdentityMailFromDomain",
+          "ses:SetIdentityNotificationTopic",
+          "ses:VerifyDomainIdentity",
+          "ses:VerifyDomainDkim"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ci_runner_ses" {
+  role       = aws_iam_role.ci_runner.name
+  policy_arn = aws_iam_policy.ci_runner_ses.arn
 }
 

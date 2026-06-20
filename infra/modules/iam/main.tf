@@ -971,18 +971,39 @@ resource "aws_iam_role_policy" "ci_runner_dns_tls_observability" {
   })
 }
 
-resource "aws_iam_role_policy" "lambda_worker_ses" {
-  name = "${local.prefix}-lambda-worker-ses"
-  role = aws_iam_role.lambda_worker.name
+resource "aws_iam_role_policy" "ci_runner_ses" {
+  name = "${local.prefix}-ci-ses"
+  role = aws_iam_role.ci_runner.id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid      = "SendReportReadyEmail"
-      Effect   = "Allow"
-      Action   = ["ses:SendEmail", "ses:SendRawEmail"]
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Sid    = "SESManage"
+        Effect = "Allow"
+        Action = [
+          "ses:VerifyEmailIdentity",
+          "ses:DeleteIdentity",
+          "ses:GetIdentityVerificationAttributes",
+          "ses:GetIdentityDkimAttributes",
+          "ses:GetIdentityNotificationAttributes",
+          "ses:GetIdentityMailFromDomainAttributes",
+          "ses:GetIdentityPolicies",
+          "ses:ListIdentities",
+          "ses:ListIdentityPolicies",
+          "ses:ListTagsForResource",
+          "ses:TagResource",
+          "ses:UntagResource",
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+          "ses:SetIdentityMailFromDomain",
+          "ses:SetIdentityNotificationTopic",
+          "ses:VerifyDomainIdentity",
+          "ses:VerifyDomainDkim"
+        ]
+        Resource = "*"
+      }
+    ]
   })
 }
 

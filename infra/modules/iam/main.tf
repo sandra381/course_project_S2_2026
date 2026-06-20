@@ -86,6 +86,12 @@ resource "aws_iam_role_policy" "lambda_api_s3" {
         Effect   = "Allow"
         Action   = ["s3:PutObject"]
         Resource = "${var.s3_reports_bucket_arn}/*"
+      },
+      {
+        Sid      = "ReportsReadWrite" # ← renombrado para reflejar ambos permisos
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject"] # ← agregado GetObject
+        Resource = "${var.s3_reports_bucket_arn}/*"
       }
     ]
   })
@@ -210,9 +216,9 @@ resource "aws_iam_role_policy" "lambda_worker_s3" {
         Resource = "${var.s3_files_bucket_arn}/*"
       },
       {
-        Sid      = "WritePDF"
+        Sid      = "WriteReadPDF"
         Effect   = "Allow"
-        Action   = ["s3:PutObject"]
+        Action   = ["s3:PutObject", "s3:GetObject"]
         Resource = "${var.s3_reports_bucket_arn}/*"
       }
     ]
@@ -962,6 +968,21 @@ resource "aws_iam_role_policy" "ci_runner_dns_tls_observability" {
         Resource = "*"
       }
     ]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda_worker_ses" {
+  name = "${local.prefix}-lambda-worker-ses"
+  role = aws_iam_role.lambda_worker.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "SendReportReadyEmail"
+      Effect   = "Allow"
+      Action   = ["ses:SendEmail", "ses:SendRawEmail"]
+      Resource = "*"
+    }]
   })
 }
 

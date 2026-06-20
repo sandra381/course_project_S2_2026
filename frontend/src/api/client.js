@@ -5,7 +5,7 @@
 // y el API Gateway de AWS.
 //
 // Para conectar con AWS:
-//   1. Corre: terraform output api_endpoint
+//   1. Corre: terraform output custom_domain_url
 //   2. Copia el valor en el archivo .env como VITE_API_URL
 //
 // Mientras VITE_API_URL esté vacío, la app usa datos demo.
@@ -45,7 +45,8 @@ async function request(method, path, body = null) {
 // AUTH
 // ─────────────────────────────────────────────────────────────
 
-// POST /login — recibe email y password, devuelve token + usuario
+// POST /login — recibe email y password (password no se valida en esta versión
+// de demo, solo se confirma que el email exista en la tabla usuarios)
 export const login = (email, password) =>
   request("POST", "/login", { email, password });
 
@@ -53,11 +54,11 @@ export const login = (email, password) =>
 // TRABAJOS (jobs)
 // ─────────────────────────────────────────────────────────────
 
-// GET /jobs — lista todos los trabajos del usuario autenticado
+// GET /jobs — lista todos los trabajos
 export const getJobs = () =>
   request("GET", "/jobs");
 
-// GET /jobs/:job_id — detalle de un trabajo específico
+// GET /jobs/:job_id — detalle de un trabajo específico (para polling de estado)
 export const getJob = (jobId) =>
   request("GET", `/jobs/${jobId}`);
 
@@ -77,6 +78,9 @@ export const uploadFileToS3 = async (presignedUrl, file) => {
   if (!res.ok) throw new Error("Error al subir el archivo a S3");
 };
 
+export const enqueueJob = (jobId, idUsuario) =>
+  request("POST", "/jobs/enqueue", { job_id: jobId, id_usuario: idUsuario });
+
 // ─────────────────────────────────────────────────────────────
 // REPORTES
 // ─────────────────────────────────────────────────────────────
@@ -89,12 +93,14 @@ export const getReports = () =>
 export const getReportDownloadUrl = (reportId) =>
   request("GET", `/reports/${reportId}/download`);
 
+// GET /reports/:id/metrics — JSON con las métricas calculadas del reporte
+// (total vendido, top productos, ventas por ciudad, clientes top, evolución mensual)
+export const getReportMetrics = (reportId) =>
+  request("GET", `/reports/${reportId}/metrics`);
+
 // POST /reports — escribe un objeto en S3 (Deliverable D del curso)
 export const postReport = (data) =>
   request("POST", "/reports", data);
-
-export const enqueueJob = (jobId, idUsuario) =>
-  request("POST", "/jobs/enqueue", { job_id: jobId, id_usuario: idUsuario });
 
 // ─────────────────────────────────────────────────────────────
 // ERRORES

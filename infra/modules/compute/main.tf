@@ -108,6 +108,7 @@ resource "aws_lambda_function" "worker" {
       DB_SECRET_ARN     = var.db_secret_arn
       S3_REPORTS_BUCKET = var.s3_reports_bucket_name
       SQS_QUEUE_URL     = var.sqs_queue_url
+      SES_SENDER_EMAIL  = var.ses_sender_email
     }
   }
 

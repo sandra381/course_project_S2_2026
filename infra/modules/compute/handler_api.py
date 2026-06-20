@@ -1,8 +1,10 @@
 import json
 import os
+from botocore.client import Config
 import boto3
 import pymysql
 from datetime import datetime
+from botocore.client import Config
 
 # ─── CONFIGURACION ─────────────────────────────────────────────────────────────
 DB_HOST           = os.environ["DB_HOST"].split(":")[0]
@@ -12,7 +14,8 @@ S3_BUCKET         = os.environ["S3_BUCKET_NAME"]
 S3_REPORTS_BUCKET = os.environ["S3_REPORTS_BUCKET"]
 SQS_QUEUE_URL     = os.environ["SQS_QUEUE_URL"]
 
-s3  = boto3.client("s3")
+
+s3 = boto3.client("s3", config=Config(signature_version="s3v4"))
 sqs = boto3.client("sqs")
 
 _sm = boto3.client("secretsmanager")
@@ -61,6 +64,40 @@ def handler(event, context):
     # ─── GET / — health check ──────────────────────────────────────────────────
     if method == "GET" and path == "/":
         return ok({"status": "ok", "service": "spvr-api"})
+    elif method == "POST" and path == "/login":
+        try:
+            body  = json.loads(event.get("body", "{}"))
+            email = body.get("email", "").strip()
+
+            if not email:
+                return error(400, "email es requerido")
+
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT id_usuario, nombre, email, rol FROM usuarios WHERE email = %s",
+                    (email,)
+                )
+                usuario = cursor.fetchone()
+            conn.close()
+
+            if not usuario:
+                return error(401, "Correo o contraseña incorrectos.")
+
+            token = f"spvr-demo-token-{usuario['id_usuario']}"
+
+            return ok({
+                "token": token,
+                "user": {
+                    "id_usuario": usuario["id_usuario"],
+                    "nombre": usuario["nombre"],
+                    "email": usuario["email"],
+                    "rol": usuario["rol"]
+                }
+            })
+        except Exception as e:
+            return error(500, str(e))
+
 
     # ─── POST /setup — crea tablas y seed data ─────────────────────────────────
     elif method == "POST" and "/setup" in path:
@@ -113,7 +150,21 @@ def handler(event, context):
                 """)
                 cursor.execute("""
                     INSERT INTO usuarios (nombre, email, rol)
-                    VALUES ('Ana Lopez', 'ana@empresa.com', 'analista')
+                    VALUES ('Ana Lopez', 'sandra.soria+ana@galileo.edu', 'analista')
+                    ON DUPLICATE KEY UPDATE nombre = nombre
+                """)
+                cursor.execute("""
+                    UPDATE usuarios SET email = 'sandra.soria+ana@galileo.edu'
+                    WHERE nombre = 'Ana Lopez'
+                """)
+                cursor.execute("""
+                    INSERT INTO usuarios (nombre, email, rol)
+                    VALUES ('Maria Julia', 'sandra.soria+mariajulia@galileo.edu', 'analista')
+                    ON DUPLICATE KEY UPDATE nombre = nombre
+                """)
+                cursor.execute("""
+                    INSERT INTO usuarios (nombre, email, rol)
+                    VALUES ('Miguel Paz', 'sandra.soria+miguelpaz@galileo.edu', 'vendedor')
                     ON DUPLICATE KEY UPDATE nombre = nombre
                 """)
                 cursor.execute("""
@@ -186,6 +237,26 @@ def handler(event, context):
             }
         except Exception as e:
             return error(500, str(e))
+        
+    elif method == "GET" and path.startswith("/jobs/") and path != "/jobs/enqueue":
+        try:
+            job_id = path.strip("/").split("/")[1]
+
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM trabajos WHERE job_id = %s",
+                    (job_id,)
+                )
+                row = cursor.fetchone()
+            conn.close()
+
+            if not row:
+                return error(404, "Job no encontrado")
+
+            return ok(serialize_row(row))
+        except Exception as e:
+            return error(500, str(e))    
 
     # ─── POST /jobs/enqueue — mete mensaje en SQS ─────────────────────────────
     # Requerido por Deliverable E. Recibe job_id y publica en SQS.

@@ -20,7 +20,7 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
           setJobs(DEMO_JOBS);
         } else {
           const data = await getJobs();
-          setJobs(data.jobs);
+          setJobs(data.jobs || []);
         }
       } catch (e) {
         setError("No se pudieron cargar los trabajos.");
@@ -33,11 +33,10 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
 
   const completed  = jobs.filter((j) => j.estado === "COMPLETADO").length;
   const processing = jobs.filter((j) => ["PROCESANDO", "PENDIENTE"].includes(j.estado)).length;
-  const failed     = jobs.filter((j) => j.estado === "FALLIDO").length;
+  const failed      = jobs.filter((j) => j.estado === "FALLIDO").length;
 
   return (
     <div className="fade-in">
-      {/* Header */}
       <div style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800 }}>
@@ -50,25 +49,22 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
         <Button onClick={() => setPage("upload")}>↑ Cargar nuevo CSV</Button>
       </div>
 
-      {/* Métricas */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
         {[
-          { label: "Reportes Generados", value: completed,  delta: "+4 desde ayer",           icon: "📈", color: C.coral },
-          { label: "En Procesamiento",   value: processing, delta: "Tiempo prom. 2.5 min",     icon: "⏳", color: C.amber },
-          { label: "Con Error",          value: failed,     delta: "Requiere revisión manual",  icon: "⚠️", color: C.red   },
+          { label: "Reportes Generados", value: completed,  icon: "📈", color: C.coral },
+          { label: "En Procesamiento",   value: processing, icon: "⏳", color: C.amber },
+          { label: "Con Error",          value: failed,     icon: "⚠️", color: C.red   },
         ].map((m, i) => (
           <Card key={i} style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontSize: 12, color: C.slateL, fontWeight: 600, marginBottom: 4 }}>{m.label}</div>
               <div style={{ fontSize: 32, fontWeight: 800, color: m.color }}>{m.value}</div>
-              <div style={{ fontSize: 11, color: C.slateL, marginTop: 4 }}>{m.delta}</div>
             </div>
             <span style={{ fontSize: 30 }}>{m.icon}</span>
           </Card>
         ))}
       </div>
 
-      {/* Tabla de trabajos */}
       <Card>
         <div style={{ padding: "18px 24px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${C.gray}` }}>
           <h2 style={{ fontSize: 16, fontWeight: 700 }}>Mis trabajos recientes</h2>
@@ -86,6 +82,10 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
           </div>
         ) : error ? (
           <div style={{ padding: 24, color: C.red, fontSize: 13 }}>⚠️ {error}</div>
+        ) : jobs.length === 0 ? (
+          <div style={{ padding: 32, textAlign: "center", color: C.slateL, fontSize: 13 }}>
+            No hay trabajos todavía. Subí un CSV para empezar.
+          </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -125,17 +125,15 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
                   <td style={{ padding: "14px 20px" }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       {j.estado === "COMPLETADO" && (
-                        <>
-                          <button
-                            onClick={() => { setSelectedReport(j); setPage("report"); }}
-                            style={{ fontSize: 12, color: C.coral, fontWeight: 600, background: C.coralLt, border: "none", padding: "5px 12px", borderRadius: 6, cursor: "pointer" }}
-                          >
-                            👁 Ver reporte
-                          </button>
-                          <button style={{ fontSize: 12, color: C.slateL, background: C.grayLt, border: "none", padding: "5px 12px", borderRadius: 6, cursor: "pointer" }}>
-                            ↓ Descargar
-                          </button>
-                        </>
+                        // El GET /jobs no trae id_reporte (eso vive en la tabla
+                        // `reportes`), por eso navegamos al Historial completo
+                        // en vez de intentar abrir ReportDetail con datos incompletos.
+                        <button
+                          onClick={() => setPage("history")}
+                          style={{ fontSize: 12, color: C.coral, fontWeight: 600, background: C.coralLt, border: "none", padding: "5px 12px", borderRadius: 6, cursor: "pointer" }}
+                        >
+                          👁 Ver en historial
+                        </button>
                       )}
                       {(j.estado === "PROCESANDO" || j.estado === "PENDIENTE") && (
                         <button
@@ -164,3 +162,4 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
     </div>
   );
 }
+

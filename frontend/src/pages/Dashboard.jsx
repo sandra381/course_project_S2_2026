@@ -20,7 +20,11 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
           await new Promise((r) => setTimeout(r, 500));
           setJobs(DEMO_JOBS);
         } else {
-          const [jobsData, reportsData] = await Promise.all([getJobs(), getReports()]);
+          const idUsuario = user.rol === "analista" ? user.id_usuario : null;
+          const [jobsData, reportsData] = await Promise.all([
+            getJobs(idUsuario),
+            getReports(idUsuario)
+          ]);
           setJobs(jobsData.jobs || []);
 
           const map = {};

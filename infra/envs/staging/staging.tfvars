@@ -36,5 +36,6 @@ ses_sender_email = "sandra.soria+noreply@galileo.edu"
 ses_test_user_emails = [
   "sandra.soria+ana@galileo.edu",
   "sandra.soria+mariajulia@galileo.edu",
-  "sandra.soria+miguelpaz@galileo.edu",
+  "sandra.soria+pablo.juarez@galileo.edu",
 ]
+jwt_secret = "spvr-2026-R4tY8kLm2Qx9VpN7cZa5HsD3wBj1FuE"

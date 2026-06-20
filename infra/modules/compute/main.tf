@@ -30,6 +30,20 @@ resource "aws_lambda_layer_version" "pymysql" {
   description         = "pymysql library for MySQL connections from Lambda"
 }
 
+resource "aws_lambda_layer_version" "bcrypt" {
+  filename            = "${path.module}/bcrypt_layer.zip"
+  layer_name          = "${var.project_name}-${var.environment}-bcrypt"
+  compatible_runtimes = ["python3.12"]
+  description         = "bcrypt library for password hashing in Lambda API"
+}
+
+resource "aws_lambda_layer_version" "jwt" {
+  filename            = "${path.module}/jwt_layer.zip"
+  layer_name          = "${var.project_name}-${var.environment}-jwt"
+  compatible_runtimes = ["python3.12"]
+  description         = "PyJWT library for token generation in Lambda API"
+}
+
 # ─── LAMBDA API ────────────────────────────────────────────────────────────────
 resource "aws_lambda_function" "api" {
   function_name    = "${var.project_name}-${var.environment}-api"
@@ -40,7 +54,7 @@ resource "aws_lambda_function" "api" {
   timeout          = var.timeout
   filename         = data.archive_file.lambda_api_zip.output_path
   source_code_hash = filebase64sha256("${path.module}/handler_api.py")
-  layers           = [aws_lambda_layer_version.pymysql.arn]
+  layers           = [aws_lambda_layer_version.pymysql.arn, aws_lambda_layer_version.bcrypt.arn, aws_lambda_layer_version.jwt.arn]
 
   vpc_config {
     subnet_ids         = var.subnet_ids
@@ -58,6 +72,7 @@ resource "aws_lambda_function" "api" {
       DB_NAME           = var.db_name
       DB_USER           = var.db_username
       DB_SECRET_ARN     = var.db_secret_arn
+      JWT_SECRET        = var.jwt_secret
     }
   }
 
@@ -129,3 +144,5 @@ resource "aws_lambda_event_source_mapping" "sqs_worker" {
   //bisect_batch_on_function_error     = var.bisect_batch_on_function_error
   enabled = true
 }
+
+

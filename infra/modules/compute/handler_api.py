@@ -5,6 +5,9 @@ import boto3
 import pymysql
 from datetime import datetime
 from botocore.client import Config
+import bcrypt
+import jwt
+from datetime import timedelta
 
 # ─── CONFIGURACION ─────────────────────────────────────────────────────────────
 DB_HOST           = os.environ["DB_HOST"].split(":")[0]
@@ -13,7 +16,7 @@ DB_USER           = os.environ["DB_USER"]
 S3_BUCKET         = os.environ["S3_BUCKET_NAME"]
 S3_REPORTS_BUCKET = os.environ["S3_REPORTS_BUCKET"]
 SQS_QUEUE_URL     = os.environ["SQS_QUEUE_URL"]
-
+JWT_SECRET = os.environ["JWT_SECRET"]
 
 s3 = boto3.client("s3", config=Config(signature_version="s3v4"))
 sqs = boto3.client("sqs")
@@ -66,16 +69,17 @@ def handler(event, context):
         return ok({"status": "ok", "service": "spvr-api"})
     elif method == "POST" and path == "/login":
         try:
-            body  = json.loads(event.get("body", "{}"))
-            email = body.get("email", "").strip()
+            body     = json.loads(event.get("body", "{}"))
+            email    = body.get("email", "").strip()
+            password = body.get("password", "")
 
-            if not email:
-                return error(400, "email es requerido")
+            if not email or not password:
+                return error(400, "email y password son requeridos")
 
             conn = get_db_connection()
             with conn.cursor() as cursor:
                 cursor.execute(
-                    "SELECT id_usuario, nombre, email, rol FROM usuarios WHERE email = %s",
+                    "SELECT id_usuario, nombre, email, rol, password_hash FROM usuarios WHERE email = %s",
                     (email,)
                 )
                 usuario = cursor.fetchone()
@@ -84,7 +88,25 @@ def handler(event, context):
             if not usuario:
                 return error(401, "Correo o contraseña incorrectos.")
 
-            token = f"spvr-demo-token-{usuario['id_usuario']}"
+            # Validación real de contraseña con bcrypt
+            if not usuario["password_hash"]:
+                return error(401, "Este usuario no tiene contraseña configurada.")
+
+            password_valida = bcrypt.checkpw(
+                password.encode("utf-8"),
+                usuario["password_hash"].encode("utf-8")
+            )
+            if not password_valida:
+                return error(401, "Correo o contraseña incorrectos.")
+
+            # Generar JWT real, expira en 8 horas
+            payload = {
+                "id_usuario": usuario["id_usuario"],
+                "email": usuario["email"],
+                "rol": usuario["rol"],
+                "exp": datetime.utcnow() + timedelta(hours=8)
+            }
+            token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
             return ok({
                 "token": token,
@@ -97,7 +119,6 @@ def handler(event, context):
             })
         except Exception as e:
             return error(500, str(e))
-
 
     # ─── POST /setup — crea tablas y seed data ─────────────────────────────────
     elif method == "POST" and "/setup" in path:
@@ -113,6 +134,14 @@ def handler(event, context):
                         PRIMARY KEY (id_usuario)
                     )
                 """)
+                try:
+                    cursor.execute("""
+                        ALTER TABLE usuarios
+                        ADD COLUMN password_hash VARCHAR(255) NULL
+                    """)
+                except Exception as alter_err:
+                    if "1060" not in str(alter_err):
+                        raise
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS trabajos (
                         job_id INT NOT NULL AUTO_INCREMENT,
@@ -148,41 +177,66 @@ def handler(event, context):
                         FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
                     )
                 """)
-                cursor.execute("""
-                    INSERT INTO usuarios (nombre, email, rol)
-                    VALUES ('Ana Lopez', 'sandra.soria+ana@galileo.edu', 'analista')
-                    ON DUPLICATE KEY UPDATE nombre = nombre
-                """)
-                cursor.execute("""
-                    UPDATE usuarios SET email = 'sandra.soria+ana@galileo.edu'
-                    WHERE nombre = 'Ana Lopez'
-                """)
-                cursor.execute("""
-                    INSERT INTO usuarios (nombre, email, rol)
-                    VALUES ('Maria Julia', 'sandra.soria+mariajulia@galileo.edu', 'analista')
-                    ON DUPLICATE KEY UPDATE nombre = nombre
-                """)
-                cursor.execute("""
-                    INSERT INTO usuarios (nombre, email, rol)
-                    VALUES ('Miguel Paz', 'sandra.soria+miguelpaz@galileo.edu', 'vendedor')
-                    ON DUPLICATE KEY UPDATE nombre = nombre
-                """)
-                cursor.execute("""
-                    INSERT INTO trabajos (id_usuario, nombre_archivo, estado, fecha_carga, csv_s3_key)
-                    VALUES (1, 'ventas_abril_2026.csv', 'COMPLETADO', '2026-04-01', 'uploads/ventas_abril_2026.csv')
-                """)
+                # Insertar usuario admin con contraseña hasheada
+                usuarios_seed = [
+                    ("Ana Lopez",            "sandra.soria+ana@galileo.edu",          "analista",      "Ana2026!"),
+                    ("Maria Julia",          "sandra.soria+mariajulia@galileo.edu",    "analista",      "Maria2026!"),
+                    ("Pablo Juarez",         "sandra.soria+pablo.juarez@galileo.edu",  "analista",      "Pablo2026!"),
+                    ("Miguel Paz",           "miguelpaz@spvr.com",                     "vendedor",      "Miguel2026!"),
+                    ("Javier Hernandez",     "javier.hernandez@spvr.com",               "vendedor",      "Javier2026!"),
+                    ("Consuelo Paiz",        "consuelo.paiz@spvr.com",                  "vendedor",      "Consuelo2026!"),
+                    ("Andrea Gomez",         "andrea.gomez@spvr.com",                   "gerente",       "Andrea2026!"),
+                    ("Santiago Lopez",       "santiago.lopez@spvr.com",                 "administrador", "Santiago2026!"),
+                    ("Valentina Rodriguez",  "valentina.rodriguez@spvr.com",            "auditor",       "Valentina2026!"),
+                ]
+
+                for nombre, email, rol, password in usuarios_seed:
+                    password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+                    cursor.execute("""
+                        INSERT INTO usuarios (nombre, email, rol, password_hash)
+                        VALUES (%s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), rol = VALUES(rol)
+                    """, (nombre, email, rol, password_hash))
             conn.commit()
             conn.close()
             return ok({"message": "tablas y seed data creados correctamente"})
         except Exception as e:
             return error(500, str(e))
 
-    # ─── GET /jobs — lista trabajos del usuario ────────────────────────────────
-    elif method == "GET" and path == "/jobs":
+    elif method == "POST" and path == "/admin/reset":
         try:
             conn = get_db_connection()
             with conn.cursor() as cursor:
-                cursor.execute("SELECT * FROM trabajos ORDER BY fecha_carga DESC LIMIT 20")
+                cursor.execute("DELETE FROM errores")
+                cursor.execute("DELETE FROM reportes")
+                cursor.execute("DELETE FROM trabajos")
+                cursor.execute("DELETE FROM usuarios")
+                cursor.execute("ALTER TABLE usuarios AUTO_INCREMENT = 1")
+                cursor.execute("ALTER TABLE trabajos AUTO_INCREMENT = 1")
+                cursor.execute("ALTER TABLE reportes AUTO_INCREMENT = 1")
+                cursor.execute("ALTER TABLE errores AUTO_INCREMENT = 1")
+            conn.commit()
+            conn.close()
+            return ok({"message": "Tablas vaciadas correctamente"})
+        except Exception as e:
+            return error(500, str(e))
+
+
+    # ─── GET /jobs — lista trabajos del usuario ────────────────────────────────
+    elif method == "GET" and path == "/jobs":
+        try:
+            query_params = event.get("queryStringParameters") or {}
+            id_usuario   = query_params.get("id_usuario")
+
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                if id_usuario:
+                    cursor.execute(
+                        "SELECT * FROM trabajos WHERE id_usuario = %s ORDER BY fecha_carga DESC LIMIT 20",
+                        (id_usuario,)
+                    )
+                else:
+                    cursor.execute("SELECT * FROM trabajos ORDER BY fecha_carga DESC LIMIT 20")
                 rows = [serialize_row(r) for r in cursor.fetchall()]
             conn.close()
             return ok({"jobs": rows})
@@ -313,22 +367,69 @@ def handler(event, context):
     # ─── GET /reports — historial de reportes ─────────────────────────────────
     elif method == "GET" and path == "/reports":
         try:
+            query_params = event.get("queryStringParameters") or {}
+            id_usuario   = query_params.get("id_usuario")
+
             conn = get_db_connection()
             with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT r.id_reporte, r.job_id, r.periodo, r.pdf_s3_key,
-                           r.fecha_generado, t.nombre_archivo, t.id_usuario
-                    FROM reportes r
-                    JOIN trabajos t ON r.job_id = t.job_id
-                    ORDER BY r.fecha_generado DESC
-                    LIMIT 20
-                """)
+                if id_usuario:
+                    cursor.execute("""
+                        SELECT r.id_reporte, r.job_id, r.periodo, r.pdf_s3_key,
+                            r.fecha_generado, t.nombre_archivo, t.id_usuario,
+                            t.csv_s3_key, u.nombre AS usuario
+                        FROM reportes r
+                        JOIN trabajos t ON r.job_id = t.job_id
+                        JOIN usuarios u ON t.id_usuario = u.id_usuario
+                        WHERE t.id_usuario = %s
+                        ORDER BY r.fecha_generado DESC
+                        LIMIT 20
+                    """, (id_usuario,))
+                else:
+                    cursor.execute("""
+                        SELECT r.id_reporte, r.job_id, r.periodo, r.pdf_s3_key,
+                            r.fecha_generado, t.nombre_archivo, t.id_usuario,
+                            t.csv_s3_key, u.nombre AS usuario
+                        FROM reportes r
+                        JOIN trabajos t ON r.job_id = t.job_id
+                        JOIN usuarios u ON t.id_usuario = u.id_usuario
+                        ORDER BY r.fecha_generado DESC
+                        LIMIT 20
+                    """)
                 rows = [serialize_row(r) for r in cursor.fetchall()]
             conn.close()
             return ok({"reports": rows})
         except Exception as e:
             return error(500, str(e))
+        
+    elif method == "GET" and "/reports/" in path and "/csv" in path:
+        try:
+            parts      = path.strip("/").split("/")
+            reporte_id = parts[1]
 
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT t.csv_s3_key
+                    FROM reportes r
+                    JOIN trabajos t ON r.job_id = t.job_id
+                    WHERE r.id_reporte = %s
+                """, (reporte_id,))
+                row = cursor.fetchone()
+            conn.close()
+
+            if not row:
+                return error(404, "Reporte no encontrado")
+
+            download_url = s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": S3_BUCKET, "Key": row["csv_s3_key"]},
+                ExpiresIn=300
+            )
+
+            return ok({"download_url": download_url})
+        except Exception as e:
+            return error(500, str(e))
+        
     # ─── GET /reports/{id}/download — presigned URL del PDF ───────────────────
     elif method == "GET" and "/reports/" in path and "/download" in path:
         try:

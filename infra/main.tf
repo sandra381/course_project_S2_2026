@@ -137,6 +137,8 @@ module "compute" {
   maximum_batching_window_in_seconds = var.maximum_batching_window_in_seconds
   bisect_batch_on_function_error     = var.bisect_batch_on_function_error
   ses_sender_email                   = var.ses_sender_email
+  jwt_secret                         = var.jwt_secret
+
 }
 # ─── MODULO DE INGRESS — API Gateway ───────────────────────────────────────────
 module "ingress" {

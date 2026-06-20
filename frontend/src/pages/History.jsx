@@ -144,6 +144,7 @@ export default function History({ user, setPage, setSelectedReport }) {
                         </button>
                       )}
                       {isReadOnly && (
+<<<<<<< HEAD
                         <button
                           onClick={async () => {
                             try {
@@ -157,6 +158,9 @@ export default function History({ user, setPage, setSelectedReport }) {
                         >
                           Ver CSV original
                         </button>
+=======
+                        <span style={{ fontSize: 11, color: C.slateL }}>Solo lectura</span>
+>>>>>>> origin/main
                       )}
                     </div>
                   </td>

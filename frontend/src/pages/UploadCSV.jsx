@@ -74,10 +74,10 @@ export default function UploadCSV({ user, setPage, setSelectedJob }) {
         // Modo real:
         // 2. Pedir presigned URL al API Gateway
 
-        const { upload_url, job_id, s3_key } = await createUpload(file.name, user.id);
+        const { upload_url, job_id, s3_key } = await createUpload(file.name, user.id_usuario);
         // 3. Subir archivo directo a S3 con la presigned URL
         await uploadFileToS3(upload_url, file);
-        await enqueueJob(job_id, user?.id || 1); 
+        await enqueueJob(job_id, user?.id_usuario || 1); 
         job = { job_id, nombre_archivo: file.name, estado: "PROCESANDO", fecha_carga: new Date().toISOString() };
       }
 

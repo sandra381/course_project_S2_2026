@@ -112,3 +112,8 @@ variable "worker_role_arn" {
   description = "ARN of the IAM execution role for Lambda Worker. Provided by module.iam.lambda_worker_role_arn."
   type        = string
 }
+
+variable "ses_sender_email" {
+  description = "Email remitente verificado en SES para notificaciones de reportes."
+  type        = string
+}

@@ -29,3 +29,11 @@ alarm_notification_email = "sandra.soria@galileo.edu"
 root_domain_name         = "grupo1.oyd.solid.com.gt"
 create_dns_zone          = false
 hosted_zone_id           = "Z09673581TIXT01P7MFT9"
+
+ses_sender_email = "sandra.soria+noreply@galileo.edu"
+
+ses_test_user_emails = [
+  "sandra.soria+ana@galileo.edu",
+  "sandra.soria+mariajulia@galileo.edu",
+  "sandra.soria+miguelpaz@galileo.edu",
+]

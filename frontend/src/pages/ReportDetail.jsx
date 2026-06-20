@@ -1,55 +1,102 @@
+import { useState, useEffect } from "react";
 import { C } from "../styles.js";
 import Card from "../components/Card.jsx";
 import Button from "../components/Button.jsx";
+import Spinner from "../components/Spinner.jsx";
+import { getReportMetrics, getReportDownloadUrl, IS_DEMO } from "../api/client.js";
 
-// Datos demo del reporte — en producción vendrían del API Gateway
-// junto con el job_id del reporte seleccionado
+// Datos demo — se usan solo cuando no hay backend real configurado
 const DEMO_REPORT_DATA = {
   periodo: "Mayo 2026",
-  fecha: "24 May 2026, 14:30",
-  archivo: "ventas_mayo_2026.csv",
-  job_id: "A-0023",
   total_vendido: 1245890,
   producto_top: "Laptop Pro X15",
   ciudad_top: "Guatemala",
   total_registros: 18540,
-  ciudades_analizadas: 12,
   clientes_frecuentes: 150,
   top_productos: [
-    { nombre: "Laptop Pro X15 Retina",      total: 680000, porcentaje: 54 },
-    { nombre: "Mouse Inalámbrico Silent",   total: 520000, porcentaje: 41 },
-    { nombre: "Teclado Mecánico RGB G-Pro", total: 410000, porcentaje: 32 },
-    { nombre: "Monitor curvo 27\" 4K",      total: 390000, porcentaje: 31 },
-    { nombre: "Webcam HD Pro 1080p",        total: 310000, porcentaje: 24 },
+    { nombre: "Laptop Pro X15 Retina",      total: 680000 },
+    { nombre: "Mouse Inalámbrico Silent",   total: 520000 },
+    { nombre: "Teclado Mecánico RGB G-Pro", total: 410000 },
   ],
   ventas_ciudad: [
-    { ciudad: "Guatemala",      total: 840000, crecimiento: "+15%" },
-    { ciudad: "Quetzaltenango", total: 250500, crecimiento: "+8%"  },
-    { ciudad: "Antigua Guatemala", total: 165300, crecimiento: "+12%" },
-    { ciudad: "Escuintla",      total: 66400,  crecimiento: "-2%"  },
-    { ciudad: "Mazatenango",    total: 62100,  crecimiento: "+5%"  },
+    { ciudad: "Guatemala",         total: 840000 },
+    { ciudad: "Quetzaltenango",    total: 250500 },
+    { ciudad: "Antigua Guatemala", total: 165300 },
   ],
   clientes_top: [
-    { nombre: "Corporación Multi-Pro", id: "C-1624", pedidos: 12, total: 40200 },
-    { nombre: "Distribuidora El Sol",  id: "C-2041", pedidos: 9,  total: 38800 },
-    { nombre: "Almacenes Unidos",      id: "C-4944", pedidos: 15, total: 31500 },
-    { nombre: "Suministros Globales",  id: "C-4422", pedidos: 7,  total: 28150 },
-    { nombre: "Inversiones del Norte", id: "C-1922", pedidos: 10, total: 22400 },
+    { nombre: "Corporación Multi-Pro", total: 40200 },
+    { nombre: "Distribuidora El Sol",  total: 38800 },
   ],
   evolucion_mensual: [
-    { mes: "Ene", total: 70000  },
-    { mes: "Feb", total: 95000  },
-    { mes: "Mar", total: 140000 },
+    { mes: "Feb", total: 85000  },
+    { mes: "Mar", total: 120000 },
     { mes: "Abr", total: 195000 },
     { mes: "May", total: 245890 },
   ],
 };
 
 export default function ReportDetail({ report, setPage }) {
-  // Si viene un reporte seleccionado real usamos sus datos,
-  // si no, usamos el demo
-  const data = DEMO_REPORT_DATA;
-  const maxBar = Math.max(...data.evolucion_mensual.map((m) => m.total));
+  const [data, setData]       = useState(IS_DEMO ? DEMO_REPORT_DATA : null);
+  const [loading, setLoading] = useState(!IS_DEMO);
+  const [error, setError]     = useState("");
+  const [downloading, setDownloading] = useState(false);
+
+  useEffect(() => {
+    if (IS_DEMO || !report) return;
+    const load = async () => {
+      try {
+        // report viene de History.jsx, donde cada fila ya es un objeto
+        // de la tabla `reportes` con id_reporte, job_id, periodo, etc.
+        const metrics = await getReportMetrics(report.id_reporte);
+        setData(metrics);
+      } catch (e) {
+        setError("No se pudieron cargar las métricas de este reporte.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [report]);
+
+  const handleDownload = async () => {
+    if (IS_DEMO) {
+      alert(`Demo: aquí se descargaría el PDF del reporte ${report?.job_id || ""}`);
+      return;
+    }
+    setDownloading(true);
+    try {
+      const { download_url } = await getReportDownloadUrl(report.id_reporte);
+      window.open(download_url, "_blank");
+    } catch (e) {
+      alert("Error al obtener el enlace de descarga.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: 64, display: "flex", justifyContent: "center" }}>
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div style={{ textAlign: "center", padding: 64, color: C.red }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+        <div style={{ fontWeight: 600 }}>{error || "Sin datos para este reporte."}</div>
+        <button onClick={() => setPage("history")} style={{ marginTop: 16, fontSize: 13, color: C.coral, background: "none", border: "none", cursor: "pointer" }}>
+          ← Volver al historial
+        </button>
+      </div>
+    );
+  }
+
+  const maxBar = data.evolucion_mensual?.length
+    ? Math.max(...data.evolucion_mensual.map((m) => m.total))
+    : 1;
 
   return (
     <div className="fade-in">
@@ -63,14 +110,17 @@ export default function ReportDetail({ report, setPage }) {
             ← Volver al historial
           </button>
           <h1 style={{ fontSize: 22, fontWeight: 800 }}>
-            Reporte — <span style={{ color: C.coral }}>{data.archivo}</span>
+            Reporte — <span style={{ color: C.coral }}>{report?.nombre_archivo || "Reporte"}</span>
           </h1>
           <p style={{ fontSize: 13, color: C.slateL, marginTop: 4 }}>
-            Período: {data.periodo} · Generado el {data.fecha} · Job ID:{" "}
-            <span style={{ fontFamily: "'JetBrains Mono',monospace" }}>{data.job_id}</span>
+            Período: {data.periodo} {report?.job_id && (
+              <>· Job ID: <span style={{ fontFamily: "'JetBrains Mono',monospace" }}>{report.job_id}</span></>
+            )}
           </p>
         </div>
-        <Button>↓ Descargar PDF</Button>
+        <Button onClick={handleDownload} disabled={downloading}>
+          {downloading ? "Generando enlace..." : "↓ Descargar PDF"}
+        </Button>
       </div>
 
       {/* KPIs principales */}
@@ -92,35 +142,20 @@ export default function ReportDetail({ report, setPage }) {
         ))}
       </div>
 
-      {/* Fila: Top productos + Clientes frecuentes */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-
         {/* Top productos */}
         <Card style={{ padding: 20 }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>
             🏅 Top productos más vendidos
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {data.top_productos.map((p, i) => (
-              <div key={i}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 13 }}>
-                  <span style={{ fontWeight: 500 }}>
-                    <span style={{ color: C.coral, fontWeight: 700, marginRight: 6 }}>{i + 1}.</span>
-                    {p.nombre}
-                  </span>
-                  <span style={{ fontWeight: 700 }}>Q{p.total.toLocaleString()}</span>
-                </div>
-                {/* Barra de porcentaje */}
-                <div style={{ height: 6, background: C.grayLt, borderRadius: 3, overflow: "hidden" }}>
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${p.porcentaje}%`,
-                      background: `linear-gradient(to right, ${C.coral}, ${C.coralDk})`,
-                      borderRadius: 3,
-                    }}
-                  />
-                </div>
+            {(data.top_productos || []).map((p, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ fontWeight: 500 }}>
+                  <span style={{ color: C.coral, fontWeight: 700, marginRight: 6 }}>{i + 1}.</span>
+                  {p.nombre}
+                </span>
+                <span style={{ fontWeight: 700 }}>Q{Number(p.total).toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -131,53 +166,29 @@ export default function ReportDetail({ report, setPage }) {
           <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>
             👥 Clientes más frecuentes
           </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 8, padding: "0 0 8px", borderBottom: `1px solid ${C.gray}` }}>
-              {["Cliente", "Pedidos", "Total"].map((h) => (
-                <span key={h} style={{ fontSize: 10, fontWeight: 700, color: C.slateL, textTransform: "uppercase" }}>{h}</span>
-              ))}
-            </div>
-            {data.clientes_top.map((c, i) => (
-              <div
-                key={i}
-                style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 8, padding: "10px 0", borderBottom: `1px solid ${C.grayLt}` }}
-              >
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{c.nombre}</div>
-                  <div style={{ fontSize: 10, color: C.slateL, fontFamily: "'JetBrains Mono',monospace" }}>{c.id}</div>
-                </div>
-                <span style={{ fontSize: 13, color: C.slateL, alignSelf: "center" }}>{c.pedidos}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.coral, alignSelf: "center" }}>
-                  Q{c.total.toLocaleString()}
-                </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {(data.clientes_top || []).map((c, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ fontWeight: 600 }}>{c.nombre}</span>
+                <span style={{ fontWeight: 700, color: C.coral }}>Q{Number(c.total).toLocaleString()}</span>
               </div>
             ))}
-            <button style={{ marginTop: 8, fontSize: 12, color: C.coral, background: "none", border: "none", cursor: "pointer", fontWeight: 600, textAlign: "left" }}>
-              Ver todos los clientes →
-            </button>
           </div>
         </Card>
       </div>
 
-      {/* Fila: Ventas por ciudad + Evolución mensual */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
         {/* Ventas por ciudad */}
         <Card style={{ padding: 20 }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>
             📍 Ventas por ciudad
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {data.ventas_ciudad.map((c, i) => (
+            {(data.ventas_ciudad || []).map((c, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{c.ciudad}</div>
-                  <div style={{ fontSize: 11, color: c.crecimiento.startsWith("+") ? C.green : C.red }}>
-                    {c.crecimiento.startsWith("+") ? "↗" : "↘"} Crecimiento: {c.crecimiento}
-                  </div>
-                </div>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{c.ciudad}</span>
                 <span style={{ fontSize: 14, fontWeight: 800, color: C.coral }}>
-                  Q{c.total.toLocaleString()}
+                  Q{Number(c.total).toLocaleString()}
                 </span>
               </div>
             ))}
@@ -190,7 +201,7 @@ export default function ReportDetail({ report, setPage }) {
             📈 Análisis de Tendencia Mensual
           </h3>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 14, height: 140 }}>
-            {data.evolucion_mensual.map((m, i) => {
+            {(data.evolucion_mensual || []).map((m, i) => {
               const isLast = i === data.evolucion_mensual.length - 1;
               const barH   = Math.round((m.total / maxBar) * 120);
               return (

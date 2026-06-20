@@ -20,28 +20,52 @@ const DEMO_LOGS = [
   { time: "14:21:02", msg: "Ensamblando páginas del documento final." },
 ];
 
+function estadoAProgreso(estado) {
+  switch (estado) {
+    case "PENDIENTE":  return { step: 1, progress: 20 };
+    case "PROCESANDO": return { step: 2, progress: 60 };
+    case "COMPLETADO": return { step: 5, progress: 100 };
+    case "FALLIDO":    return { step: 2, progress: 100 };
+    default:           return { step: 0, progress: 5 };
+  }
+}
+
 export default function JobStatus({ job }) {
-  const [currentStep, setCurrentStep] = useState(2);
-  const [progress, setProgress]       = useState(40);
-  const [logs, setLogs]               = useState(DEMO_LOGS.slice(0, 3));
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress]       = useState(5);
+  const [logs, setLogs]               = useState(DEMO_LOGS.slice(0, 1));
   const [jobData, setJobData]         = useState(job);
 
-  // Polling al API Gateway cada 3s para actualizar el estado real
   useEffect(() => {
-    if (!job || IS_DEMO) return;
-    const interval = setInterval(async () => {
+    if (!job || !job.job_id || IS_DEMO) return;
+
+    let activo = true;
+
+    const consultar = async () => {
       try {
         const data = await getJob(job.job_id);
+        if (!activo) return;
         setJobData(data);
+
+        const { step, progress: pct } = estadoAProgreso(data.estado);
+        setCurrentStep(step);
+        setProgress(pct);
+
         if (data.estado === "COMPLETADO" || data.estado === "FALLIDO") {
           clearInterval(interval);
         }
       } catch (_) {}
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [job]);
+    };
 
-  // Simulación de progreso en modo demo
+    consultar();
+    const interval = setInterval(consultar, 3000);
+
+    return () => {
+      activo = false;
+      clearInterval(interval);
+    };
+  }, [job?.job_id]);
+
   useEffect(() => {
     if (!job || !IS_DEMO) return;
     const timer = setInterval(() => {
@@ -82,10 +106,8 @@ export default function JobStatus({ job }) {
         </p>
       </div>
 
-      {/* Pasos */}
       <Card style={{ padding: 28, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", position: "relative", marginBottom: 32 }}>
-          {/* Línea de fondo */}
           <div style={{ position: "absolute", top: 19, left: "5%", right: "5%", height: 2, background: C.gray, zIndex: 0 }} />
 
           {STEPS.map((step, i) => {
@@ -115,7 +137,6 @@ export default function JobStatus({ job }) {
           })}
         </div>
 
-        {/* Barra de progreso */}
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: C.slate }}>Progreso General</span>
@@ -126,37 +147,51 @@ export default function JobStatus({ job }) {
               style={{
                 height: "100%",
                 width: `${progress}%`,
-                background: `linear-gradient(to right, ${C.coral}, ${C.coralDk})`,
+                background: jobData?.estado === "FALLIDO"
+                  ? C.red
+                  : `linear-gradient(to right, ${C.coral}, ${C.coralDk})`,
                 borderRadius: 4,
                 transition: "width 0.4s ease",
               }}
             />
           </div>
-          {progress < 100 && (
+          {jobData?.estado === "FALLIDO" ? (
+            <p style={{ fontSize: 12, color: C.red, marginTop: 6, fontWeight: 600 }}>
+              El procesamiento falló. Revisá el registro de errores.
+            </p>
+          ) : progress < 100 ? (
             <p style={{ fontSize: 12, color: C.slateL, marginTop: 6 }}>
               Generando reporte PDF y reportes individuales por vendedor.
+            </p>
+          ) : (
+            <p style={{ fontSize: 12, color: C.green, marginTop: 6, fontWeight: 600 }}>
+              ✅ Reporte generado exitosamente.
             </p>
           )}
         </div>
       </Card>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        {/* Log de actividad */}
         <Card style={{ padding: 20 }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: C.slate, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             📋 Registro de Actividad
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {logs.map((log, i) => (
-              <div key={i} style={{ display: "flex", gap: 10, fontSize: 12 }}>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", color: C.coral, flexShrink: 0 }}>{log.time}</span>
-                <span style={{ color: C.slate }}>{log.msg}</span>
+            {IS_DEMO ? (
+              logs.map((log, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, fontSize: 12 }}>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", color: C.coral, flexShrink: 0 }}>{log.time}</span>
+                  <span style={{ color: C.slate }}>{log.msg}</span>
+                </div>
+              ))
+            ) : (
+              <div style={{ fontSize: 12, color: C.slateL }}>
+                Estado actual: <strong>{jobData?.estado || "Consultando..."}</strong>
               </div>
-            ))}
+            )}
           </div>
         </Card>
 
-        {/* Detalles */}
         <Card style={{ padding: 20 }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: C.slate, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             ℹ️ Detalles del trabajo
@@ -164,7 +199,7 @@ export default function JobStatus({ job }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 13 }}>
             {[
               { label: "🕐 Inicio",    value: new Date(job.fecha_carga).toLocaleString("es-GT") },
-              { label: "⏱ Estimado",  value: "~2 minutos" },
+              { label: "⏱ Estado",    value: jobData?.estado || "PENDIENTE" },
               { label: "📄 Archivo",   value: job.nombre_archivo },
               { label: "🆔 Job ID",    value: job.job_id, mono: true },
             ].map((row) => (

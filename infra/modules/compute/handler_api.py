@@ -244,7 +244,6 @@ def handler(event, context):
         except Exception as e:
             return error(500, str(e))
 
-
     elif method == "POST" and path == "/admin/reset":
         try:
             conn = get_db_connection()

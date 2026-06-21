@@ -352,7 +352,11 @@ resource "aws_iam_role" "ci_runner" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_org}/${var.github_repo}:*"
+            "token.actions.githubusercontent.com:sub" = [
+              "repo:${var.github_org}/${var.github_repo}:environment:dev",
+              "repo:${var.github_org}/${var.github_repo}:environment:staging",
+              "repo:${var.github_org}/${var.github_repo}:pull_request"
+            ]
           }
         }
       }

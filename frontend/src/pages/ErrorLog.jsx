@@ -4,6 +4,7 @@ import Card from "../components/Card.jsx";
 import Spinner from "../components/Spinner.jsx";
 import { getErrors, IS_DEMO } from "../api/client.js";
 import { DEMO_ERRORS } from "../api/demo.js";
+import { parseUTC } from "../api/client.js";  // agregar al import existente
 
 export default function ErrorLog() {
   const [errors, setErrors]   = useState([]);
@@ -121,7 +122,7 @@ export default function ErrorLog() {
                       </div>
                     </td>
                     <td style={{ padding: "14px 16px", fontSize: 12, color: C.slateL }}>
-                      {new Date(e.fecha).toLocaleString("es-GT")}
+                      {parseUTC(e.fecha).toLocaleString("es-GT", { timeZone: "America/Guatemala" })}
                     </td>
                     <td style={{ padding: "14px 16px" }}>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>

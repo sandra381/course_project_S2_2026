@@ -214,6 +214,76 @@ def generar_pdf(metricas, job_id, nombre_archivo, periodo):
     buffer.seek(0)
     return buffer
 
+def generar_reportes_vendedores(df, job_id, periodo, conn):
+    if "salesperson_name" not in df.columns:
+        print("[worker] CSV sin columna salesperson_name, se omite reporte de vendedores")
+        return
+
+    df = df.copy()
+    df["total_linea"] = df["quantity"] * df["unit_price"]
+
+    # Ranking general de este CSV — total vendido por cada vendedor
+    ranking = (
+        df.groupby("salesperson_name")["total_linea"]
+        .sum()
+        .sort_values(ascending=False)
+    )
+    ranking_total = len(ranking)
+
+    for vendedor in df["salesperson_name"].unique():
+        try:
+            df_v = df[df["salesperson_name"] == vendedor]
+
+            total_vendido      = float(df_v["total_linea"].sum())
+            productos_vendidos = int(df_v["quantity"].sum())
+            clientes_atendidos = int(df_v["customer_id"].nunique())
+            ranking_posicion    = int(list(ranking.index).index(vendedor) + 1)
+
+            top_productos = (
+                df_v.groupby("product_name")["total_linea"]
+                .sum()
+                .sort_values(ascending=False)
+                .head(10)
+            )
+
+            metricas_vendedor = {
+                "nombre_vendedor": vendedor,
+                "periodo": periodo,
+                "total_vendido": total_vendido,
+                "productos_vendidos": productos_vendidos,
+                "clientes_atendidos": clientes_atendidos,
+                "ranking_posicion": ranking_posicion,
+                "ranking_total": ranking_total,
+                "top_productos": [
+                    {"nombre": n, "total": float(t)} for n, t in top_productos.items()
+                ],
+            }
+
+            json_key = f"reports/vendedor_{job_id}_{vendedor.replace(' ', '_')}.json"
+            s3.put_object(
+                Bucket=S3_REPORTS_BUCKET,
+                Key=json_key,
+                Body=json.dumps(metricas_vendedor),
+                ContentType="application/json"
+            )
+
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO reportes_vendedor
+                        (job_id, nombre_vendedor, periodo, total_vendido,
+                         productos_vendidos, clientes_atendidos, json_s3_key, fecha_generado)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    job_id, vendedor, periodo, total_vendido,
+                    productos_vendidos, clientes_atendidos, json_key, datetime.utcnow()
+                ))
+            conn.commit()
+
+            print(f"[worker] Reporte de vendedor generado: {vendedor} (job_id={job_id})")
+
+        except Exception as e:
+            # Un error en UN vendedor no debe afectar a los demás ni al job principal.
+            print(f"[worker] ADVERTENCIA: no se pudo generar reporte para vendedor {vendedor}: {str(e)}")
 
 # ─── HANDLER PRINCIPAL ─────────────────────────────────────────────────────────
 def handler(event, context):
@@ -293,7 +363,7 @@ def handler(event, context):
                     INSERT INTO reportes (job_id, periodo, pdf_s3_key, fecha_generado)
                     VALUES (%s, %s, %s, %s)
                     """,
-                    (job_id, periodo, pdf_key, datetime.utcnow().date())
+                    (job_id, periodo, pdf_key, datetime.utcnow())
                 )
 
                 # ── Obtener email y nombre del usuario para la notificación ──
@@ -324,6 +394,13 @@ def handler(event, context):
             else:
                 print(f"[worker] No se encontró usuario id_usuario={id_usuario}, no se envía correo")
 
+                # ── Generar reportes individuales por vendedor (si aplica) ───────
+            try:
+                generar_reportes_vendedores(df, job_id, periodo, conn)
+            except Exception as e:
+                # No debe afectar el resultado del job principal si esto falla.
+                print(f"[worker] ADVERTENCIA: error generando reportes de vendedores: {str(e)}")
+                    
             print(f"[worker] job_id={job_id} completado exitosamente message_id={message_id}")
 
         except Exception as e:
@@ -342,7 +419,7 @@ def handler(event, context):
                             INSERT INTO errores (job_id, id_usuario, fecha, descripcion)
                             VALUES (%s, %s, %s, %s)
                             """,
-                            (job_id, id_usuario, datetime.utcnow().date(), error_message)
+                            (job_id, id_usuario, datetime.utcnow(), error_message)
                         )
                     conn.commit()
             except Exception as db_err:

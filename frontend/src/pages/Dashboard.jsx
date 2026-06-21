@@ -6,6 +6,7 @@ import Spinner from "../components/Spinner.jsx";
 import { StatusBadge } from "../components/Badge.jsx";
 import { getJobs, getReports, getReportDownloadUrl, IS_DEMO } from "../api/client.js";
 import { DEMO_JOBS } from "../api/demo.js";
+import { parseUTC } from "../api/client.js"; 
 
 export default function Dashboard({ user, setPage, setSelectedJob, setSelectedReport }) {
   const [jobs, setJobs]               = useState([]);
@@ -141,7 +142,7 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
                       </span>
                     </td>
                     <td style={{ padding: "14px 20px", fontSize: 13, color: C.slateL }}>
-                      {new Date(j.fecha_carga).toLocaleString("es-GT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                     {parseUTC(j.fecha_carga).toLocaleString("es-GT", { timeZone: "America/Guatemala", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </td>
                     <td style={{ padding: "14px 20px" }}>
                       <StatusBadge estado={j.estado} />
@@ -176,12 +177,9 @@ export default function Dashboard({ user, setPage, setSelectedJob, setSelectedRe
                           </button>
                         )}
                         {j.estado === "FALLIDO" && (
-                          <button
-                            onClick={() => setPage("errors")}
-                            style={{ fontSize: 12, color: C.red, fontWeight: 600, background: C.redLt, border: "none", padding: "5px 12px", borderRadius: 6, cursor: "pointer" }}
-                          >
-                            ⚠️ Ver error
-                          </button>
+                          <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>
+                            Error en el procesamiento
+                          </span>
                         )}
                       </div>
                     </td>

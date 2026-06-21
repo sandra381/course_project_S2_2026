@@ -1,325 +1,600 @@
-# SPVR — Infrastructure
+# SPVR — Sistema de Procesamiento de Ventas y Reportes
 
-Sistema de Procesamiento de Ventas y Reportes (SPVR)
-Proyecto académico — Universidad Galileo, Postgrado en Diseño y Desarrollo de Software.
+Infraestructura como código (Terraform) para el proyecto SPVR — Curso de Optimización y Desempeño (OYD), Universidad Galileo.
 
-## Stack
+---
 
-| Componente | Servicio |
+## Arquitectura
+
+```
+Internet
+   │
+   ▼
+CloudFront (redirect HTTP→HTTPS, TLS termination)
+   │
+   ▼
+API Gateway (HTTP API)
+   │
+   ▼
+Lambda API ──→ RDS MySQL
+   │
+   ▼
+SQS Queue ──→ Lambda Worker ──→ S3 (reports)
+   │
+   ▼
+DLQ
+```
+
+7 componentes: **Compute** (Lambda), **Storage** (S3), **Database** (RDS), **Networking** (VPC), **Async** (SQS), **Security/IAM** (roles, KMS, Secrets Manager), **Observability** (CloudWatch, SNS, Budgets).
+
+---
+
+## Runbook
+
+### 1. Permisos de cuenta requeridos
+
+- Cuenta de AWS con permisos de administrador (o el rol `oyd-project-dev-ci-runner-role` ya provisionado)
+- Acceso a GitHub con permisos de administrador del repositorio (para configurar Secrets y Environments)
+
+### 2. GitHub Environments y Secrets a configurar
+
+**Repository secrets** (`Settings → Secrets and Variables → Actions`):
+| Secret | Descripción |
 |---|---|
-| Cloud Provider | AWS |
-| Compute | AWS Lambda (Python 3.12) |
-| Database | Amazon RDS MySQL 8.0 |
-| Storage | Amazon S3 |
-| Messaging | Amazon SQS (queue + DLQ) |
-| Scheduling | Amazon EventBridge Scheduler |
-| Networking | VPC custom con subnets públicas y privadas |
-| Ingress | API Gateway HTTP API |
-| IaC | Terraform ~> 1.8 |
-| CI/CD | GitHub Actions |
+| `AWS_CI_ROLE_ARN` | ARN del CI runner role (`arn:aws:iam::<account>:role/oyd-project-dev-ci-runner-role`) |
+| `AWS_REGION` | Región de AWS (`us-east-1`) |
 
-## Estructura del repositorio
+**Environment secrets**:
+| Environment | Secret | Descripción |
+|---|---|---|
+| `dev` | `DEV_DB_PASSWORD` | Contraseña de la base de datos RDS de dev |
+| `staging` | `STAGING_DB_PASSWORD` | Contraseña de la base de datos RDS de staging |
 
-```
-infra/
-├── main.tf                       — root module, llama a todos los módulos
-├── variables.tf                  — variables del root module
-├── outputs.tf                    — outputs del root module
-├── backend.tf                    — backend S3 para remote state
-├── provider.tf                   — AWS provider
-├── modules/
-│   ├── network/                  — VPC, subnets, IGW, NAT, SGs, NACLs
-│   ├── compute/                  — Lambda API, Lambda Worker, event source mapping
-│   ├── database/                 — RDS MySQL
-│   ├── storage/                  — S3 buckets (archivos y reportes)
-│   ├── ingress/                  — API Gateway HTTP API
-│   ├── async/                    — SQS queue + DLQ con redrive_policy
-│   └── scheduler/                — EventBridge Scheduler (cleanup-stale-jobs)
-├── database/
-│   └── schema.sql                — schema y seed data de la DB
-├── docs/
-│   ├── delivery-1-summary.md
-│   ├── delivery-2-summary.md
-│   ├── delivery-3-summary.md
-│   └── delivery-4-summary.md
-├── envs/
-│   ├── dev/
-│   │   ├── dev.tfvars             — valores del ambiente dev
-│   │   └── backend-dev.hcl        — backend remoto de dev
-│   └── staging/
-│       ├── staging.tfvars         — valores del ambiente staging
-│       └── backend-staging.hcl    — backend remoto de staging
-└── evidence/
-    ├── network-foundation.txt
-    ├── security-groups-plan.txt
-    ├── security-groups.png
-    ├── ingress-curl.txt
-    ├── ingress-healthy.png
-    ├── e2e-get.txt
-    ├── e2e-post.txt
-    ├── e2e-storage.png
-    ├── ci-plan.png
-    ├── async-foundation.txt
-    ├── event-source-plan.txt
-    ├── event-source.png
-    ├── scheduler-plan.txt
-    ├── scheduler.png
-    ├── github-environments.png
-    ├── ci-apply-dev.png
-    ├── ci-apply-staging.png
-    ├── ci-destroy.png
-    ├── ci-drift.png
-    ├── ruleset-config.png
-    ├── ruleset-blocked-merge.png
-    ├── async-enqueue.txt
-    ├── async-consumer.png
-    └── async-object.png
-```
+**Environments a crear** (`Settings → Environments`): `dev`, `staging` (staging con regla de aprobación manual opcional).
 
-## Módulos
-
-### `modules/network`
-Provisiona la VPC completa con subnets públicas y privadas, Internet Gateway, NAT Gateway, route tables y security groups (web-sg, app-sg, db-sg) con reglas SG-to-SG.
-
-### `modules/compute`
-Provisiona dos funciones Lambda: `oyd-project-<env>-api` (maneja solicitudes del frontend y encola jobs en SQS) y `oyd-project-<env>-worker` (procesa archivos CSV, genera reportes PDF con pandas/reportlab y los escribe en S3). El Worker está conectado a la cola SQS mediante un `aws_lambda_event_source_mapping`. Ambas funciones corren en subnets privadas con el `app-sg`.
-
-### `modules/database`
-Provisiona una instancia RDS MySQL 8.0 (`db.t3.micro`) en subnets privadas con el `db-sg`.
-
-### `modules/storage`
-Provisiona dos buckets S3: uno para archivos CSV subidos (`<project>-<env>-files`) y otro para reportes PDF generados (`<project>-<env>-reports`).
-
-### `modules/ingress`
-Provisiona un API Gateway HTTP API con integración Lambda proxy, rutas GET y POST, y stage `$default`.
-
-### `modules/async`
-Provisiona la cola SQS principal (`spvr-jobs-queue`) y su Dead Letter Queue (`spvr-jobs-dlq`), conectadas mediante `redrive_policy` con `max_receive_count = 3`. Expone como outputs las URLs y ARNs de ambas colas, consumidos por `modules/compute` y `modules/scheduler`.
-
-### `modules/scheduler`
-Provisiona un `aws_scheduler_schedule` (EventBridge Scheduler) que invoca periódicamente la función Lambda de limpieza `oyd-project-<env>-cleanup`, encargada de marcar como expirados los jobs que llevan más de `var.stale_hours` en estado `PENDIENTE` o `PROCESANDO`. Incluye un rol IAM dedicado, scoped únicamente al ARN de esa función específica.
-
-## Comandos
+### 3. Clonar y disparar el pipeline
 
 ```bash
-# Inicializar (dev)
+git clone https://github.com/sandra381/course_project_S2_2026.git
+cd course_project_S2_2026
+git checkout -b mi-rama
+git commit --allow-empty -m "trigger pipeline"
+git push origin mi-rama
+# Crear PR hacia main, esperar checks, hacer merge
+```
+
+El merge a `main` dispara automáticamente `terraform-apply-dev` (y luego `terraform-apply-staging`), sin intervención manual.
+
+### 4. Verificar que todo está corriendo
+
+```bash
 cd infra/
-terraform init -backend-config=envs/dev/backend-dev.hcl
-
-# Plan (dev)
-terraform plan -var-file=envs/dev/dev.tfvars -var="db_password=<password>"
-
-# Apply (dev)
-terraform apply -var-file=envs/dev/dev.tfvars -var="db_password=<password>"
-
-# Inicializar (staging) — requiere -reconfigure si ya se inicializó dev en el mismo workspace local
-terraform init -reconfigure -backend-config=envs/staging/backend-staging.hcl
-
-# Plan / Apply (staging)
-terraform plan -var-file=envs/staging/staging.tfvars -var="db_password=<password>"
-terraform apply -var-file=envs/staging/staging.tfvars -var="db_password=<password>"
-
-# Destroy (gated — solo vía workflow_dispatch en CI, ver terraform-destroy.yml)
-terraform destroy -var-file=envs/dev/dev.tfvars -var="db_password=<password>"
+terraform init -reconfigure -backend-config=envs/dev/backend-dev.hcl
+terraform output
 ```
 
-## Endpoints
+Confirmar que aparecen: `lambda_function_arn`, `db_endpoint`, `vpc_id`, `sqs_queue_arn`, `storage_files_bucket_arn`, `ci_runner_role_arn`, `observability_dashboard_url`.
 
-| Método | Path | Descripción |
-|---|---|---|
-| GET | `/` | Health check |
-| GET | `/jobs` | Lista trabajos desde RDS MySQL |
-| POST | `/upload` | Genera presigned URL para subir CSV a S3, crea job en RDS |
-| POST | `/jobs/enqueue` | Encola un job existente en SQS, retorna HTTP 202 + message ID |
-| POST | `/setup` | Crea tablas y seed data en RDS (solo desarrollo) |
+### 5. Primer arranque de la aplicación (post-infraestructura)
 
-## CI/CD — Pipeline
+```bash
+curl -X POST https://api.grupo1.oyd.solid.com.gt/setup
+```
 
-El workflow `terraform-ci.yml` implementa:
+Crea las tablas (`usuarios`, `trabajos`, `reportes`, `errores`, `reportes_vendedor`) y los 9 usuarios de prueba (uno por cada rol: analista, vendedor, gerente, administrador, auditor) con contraseñas hasheadas vía bcrypt.
 
-- **Pull Request** → corren `Terraform Format Check`, `Terraform Validate` y `Terraform Plan` (genera y sube `tfplan-dev` y `tfplan-staging` como artifacts, postea el plan combinado como comentario en el PR).
-- **Merge a `main`** → el job `Terraform Apply — dev` corre automáticamente (`environment: dev`, sin aprobación), descarga `tfplan-dev` del run del PR y ejecuta `terraform apply tfplan-dev` sin re-planear.
-- **Tras éxito de dev** → el job `Terraform Apply — staging` se pausa esperando aprobación de un reviewer (`environment: staging`), luego descarga `tfplan-staging` y aplica sin re-planear.
+---
 
-Workflows adicionales:
-- `terraform-destroy.yml` — solo `workflow_dispatch`, con input `environment` (`dev`/`staging`), imprime confirmación antes de destruir.
-- `terraform-drift.yml` — corre en `schedule` (diario), ejecuta `terraform plan -detailed-exitcode` contra el state de dev y publica el resultado en `$GITHUB_STEP_SUMMARY`.
+## Evidence
 
-Un repository ruleset en `main` (Active) exige que los tres checks anteriores pasen antes de mergear, requiere que la rama esté actualizada, y bloquea force-push y borrado de la rama.
-
-## Evidence — Delivery 4 (Async Infrastructure & Full CD Pipeline)
-
-### Deliverable A — Async Messaging Module
-
-Output de `terraform output` mostrando la URL y ARN de la cola principal y del DLQ:
+### Deliverable A — IAM Security Module
 
 ```
-api_endpoint = "https://200tq8aa9d.execute-api.us-east-1.amazonaws.com/"
-db_endpoint = "oyd-project-dev-db.c4xq80ckagkb.us-east-1.rds.amazonaws.com:3306"
+# Se crean roles separados por servicio con políticas sin comodines
++ resource "aws_iam_role" "lambda_api" {
++   name = "oyd-project-dev-lambda-api-role"
++ }
++ resource "aws_iam_role_policy" "lambda_api_s3" {
++   policy = {
++     Statement = [
++       { Action = ["s3:GetObject","s3:PutObject"], Resource = "arn:aws:s3:::oyd-project-dev-files/*" },
++       { Action = ["s3:PutObject"], Resource = "arn:aws:s3:::oyd-project-dev-reports/*" }
++     ]
++   }
++ }
++ resource "aws_iam_role_policy" "lambda_api_sqs" {
++   policy = {
++     Statement = [{ Action = ["sqs:SendMessage"], Resource = "arn:aws:sqs:us-east-1:121218949493:spvr-jobs-queue" }]
++   }
++ }
++ resource "aws_iam_role_policy" "lambda_api_rds" {
++   policy = {
++     Statement = [{ Action = ["rds:DescribeDBInstances"], Resource = "arn:aws:rds:us-east-1:121218949493:db:oyd-project-dev-db" }]
++   }
++ }
+
++ resource "aws_iam_role" "lambda_worker" {
++   name = "oyd-project-dev-lambda-worker-role"
++ }
++ resource "aws_iam_role_policy" "lambda_worker_s3" {
++   policy = {
++     Statement = [
++       { Action = ["s3:GetObject"], Resource = "arn:aws:s3:::oyd-project-dev-files/*" },
++       { Action = ["s3:PutObject"], Resource = "arn:aws:s3:::oyd-project-dev-reports/*" }
++     ]
++   }
++ }
++ resource "aws_iam_role_policy" "lambda_worker_sqs" {
++   policy = {
++     Statement = [{ Action = ["sqs:ReceiveMessage","sqs:DeleteMessage","sqs:GetQueueAttributes"], Resource = "arn:aws:sqs:us-east-1:121218949493:spvr-jobs-queue" }]
++   }
++ }
+
+# OIDC provider para GitHub Actions
++ resource "aws_iam_openid_connect_provider" "github" {
++   url             = "https://token.actions.githubusercontent.com"
++   client_id_list  = ["sts.amazonaws.com"]
++ }
+
+# CI runner role con trust policy scoped al repositorio
++ resource "aws_iam_role" "ci_runner" {
++   name = "oyd-project-dev-ci-runner-role"
++   assume_role_policy = {
++     Statement = [{
++       Action = "sts:AssumeRole"
++       Principal = { Federated = "arn:aws:iam::121218949493:oidc-provider/token.actions.githubusercontent.com" }
++       Condition = {
++         StringEquals = { "token.actions.githubusercontent.com:sub" = "repo:sandra381/course_project_S2_2026:ref:refs/heads/main" }
++       }
++     }]
++   }
++ }
+```
+`infra/evidence/iam-plan.txt` — plan de Terraform que muestra todos los roles, políticas y asociaciones de políticas (attachments) de IAM creados por el módulo de IAM.
+
+[Ver evidencia completa aqui](evidence/iam-plan.txt)
+
+### Entregable B — Secrets Manager y KMS
+```
+db_secret_arn = "arn:aws:secretsmanager:us-east-1:121218949493:secret:oyd-project-dev-db-password-Q5lnbj"
+db_secret_name = "oyd-project-dev-db-password"
+kms_alias_name = "alias/oyd-project-dev-cmk"
+kms_key_arn = "arn:aws:kms:us-east-1:121218949493:key/53dd0626-8f0f-46ed-88ff-8c15b9457c65"
+```
+`infra/evidence/secrets-kms.txt` — salida de Terraform que muestra el ARN de la llave KMS y el ARN del secreto en Secrets Manager.  [Ver evidencia completa aqui](evidence/secrets-kms.txt)
+
+![Consola de Secrets Manager](evidence/secrets-console.png)
+
+
+
+### Entregable C — Autenticación CI mediante OIDC
+
+![Autenticación OIDC Exitosa](evidence/oidc-auth-log.png)
+
+![Secrets Eliminados](evidence/oidc-secrets-removed.png)
+
+### Entregable D — Terminación TLS
+
+```
+# HTTPS - conexión segura con certificado válido
+$ curl -v https://api.grupo1.oyd.solid.com.gt/
+...
+* TLSv1.3 handshake completed
+* Server certificate:
+*   subject: CN=api.grupo1.oyd.solid.com.gt
+*   start date: Jun 19 00:00:00 2026 GMT
+*   expire date: Jan  2 23:59:59 2027 GMT
+*   issuer: C=US; O=Amazon; CN=Amazon RSA 2048 M01
+* SSL certificate verified.
+...
+< HTTP/2 200
+< content-type: application/json
+{"status": "ok", "service": "spvr-api"}
+
+# HTTP - redirección 301 a HTTPS
+$ curl -v http://api.grupo1.oyd.solid.com.gt/
+...
+< HTTP/1.1 301 Moved Permanently
+< Location: https://api.grupo1.oyd.solid.com.gt/
+< X-Cache: Redirect from cloudfront
+...
+<html>...301 Moved Permanently...</html>
+```
+`infra/evidence/tls-curl.txt` — salida de curl que muestra un handshake TLS exitoso (HTTPS, HTTP/2 200) y una redirección HTTP 301 hacia HTTPS mediante CloudFront.
+
+[Ver evidencia completa aqui](evidence/tls-curl.txt)
+
+**Dominio personalizado:** `https://api.grupo1.oyd.solid.com.gt`
+**Arquitectura:** CloudFront (capa de redirección) → API Gateway HTTP API → Lambda
+**Certificado:** AWS ACM, región us-east-1 (coincide con la región de API Gateway)
+
+
+### Entregable E — Módulo de Observabilidad
+
+```
+observability_budget_name = "oyd-project-dev-monthly-budget"
+observability_dashboard_url = "https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=oyd-project-dev-dashboard"
+observability_lambda_api_errors_alarm_arn = "arn:aws:cloudwatch:us-east-1:121218949493:alarm:oyd-project-dev-lambda-api-errors"
+observability_log_group_names = {
+observability_sns_topic_arn = "arn:aws:sns:us-east-1:121218949493:oyd-project-dev-alerts"
+observability_sqs_queue_depth_alarm_arn = "arn:aws:cloudwatch:us-east-1:121218949493:alarm:oyd-project-dev-sqs-queue-depth"
+```
+`infra/evidence/observability-outputs.txt` — salida de Terraform que muestra los ARN de los grupos de logs y las alarmas.
+
+[Ver evidencia completa aqui](evidence/observability-outputs.txt)
+
+![Dashboard](evidence/dashboard.png)
+
+![Presupuesto](evidence/budget.png)
+
+### Entregable F — Evidencia de Despliegue con un Solo Clic
+
+![Pipeline en Estado Limpio](evidence/clean-state-pipeline.png)
+
+```
+Run terraform apply tfplan-dev
+  terraform apply tfplan-dev
+  shell: /usr/bin/bash -e {0}
+  env:
+    TERRAFORM_CLI_PATH: /home/runner/work/_temp/d06a5c9d-11d8-4746-bda5-cb8c421e14c4
+    AWS_DEFAULT_REGION: ***
+    AWS_REGION: ***
+    AWS_ACCESS_KEY_ID: ***
+    AWS_SECRET_ACCESS_KEY: ***
+    AWS_SESSION_TOKEN: ***
+    TF_VAR_db_password: ***
+
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+acm_certificate_arn = "arn:aws:acm:***:121218949493:certificate/33abf93c-aee0-40cb-adbd-a97a15050719"
+api_endpoint = "https://pt25bi31v0.execute-api.***.amazonaws.com/"
+ci_runner_role_arn = "***"
+cloudfront_domain_name = "d2id0i8tvjaluk.cloudfront.net"
+custom_domain_url = "https://api.grupo1.oyd.solid.com.gt/"
+db_endpoint = "oyd-project-dev-db.c4xq80ckagkb.***.rds.amazonaws.com:3306"
 db_name = "spvr"
-lambda_function_arn = "arn:aws:lambda:us-east-1:121218949493:function:oyd-project-dev-api"
+db_secret_arn = "arn:aws:secretsmanager:***:121218949493:secret:oyd-project-dev-db-password-GpBqZF"
+db_secret_name = "oyd-project-dev-db-password"
+kms_alias_name = "alias/oyd-project-dev-cmk"
+kms_key_arn = "arn:aws:kms:***:121218949493:key/bd88caed-c30b-4466-a0d8-be67f9977f94"
+lambda_api_role_arn = "arn:aws:iam::121218949493:role/oyd-project-dev-lambda-api-role"
+lambda_cleanup_role_arn = "arn:aws:iam::121218949493:role/oyd-project-dev-lambda-cleanup-role"
+lambda_function_arn = "arn:aws:lambda:***:121218949493:function:oyd-project-dev-api"
 lambda_function_name = "oyd-project-dev-api"
+lambda_worker_role_arn = "arn:aws:iam::121218949493:role/oyd-project-dev-lambda-worker-role"
+name_servers = []
 nat_gateway_ids = [
-  "nat-0e9502e98f0aba64e",
+  "nat-0a3444c26d5708a58",
 ]
+observability_budget_name = "oyd-project-dev-monthly-budget"
+observability_dashboard_url = "https://***.console.aws.amazon.com/cloudwatch/home?region=***#dashboards:name=oyd-project-dev-dashboard"
+observability_lambda_api_errors_alarm_arn = "arn:aws:cloudwatch:***:121218949493:alarm:oyd-project-dev-lambda-api-errors"
+observability_log_group_names = {
+  "api" = "/dev/api"
+  "cleanup" = "/dev/cleanup"
+  "worker" = "/dev/worker"
+}
+observability_sns_topic_arn = "arn:aws:sns:***:121218949493:oyd-project-dev-alerts"
+observability_sqs_queue_depth_alarm_arn = "arn:aws:cloudwatch:***:121218949493:alarm:oyd-project-dev-sqs-queue-depth"
 private_subnet_ids = [
-  "subnet-0015f9ac45171db3f",
-  "subnet-02b1b4960ac15ed38",
+  "subnet-073b55085b471caed",
+  "subnet-06c1afb7015f1ba80",
 ]
 public_subnet_ids = [
-  "subnet-0efe416505ffa8809",
-  "subnet-02167d660fe5caafd",
+  "subnet-095cf58891c7d7472",
+  "subnet-01cac52d451a7c604",
 ]
-sqs_dlq_arn = "arn:aws:sqs:us-east-1:121218949493:spvr-jobs-dlq"
-sqs_dlq_url = "https://sqs.us-east-1.amazonaws.com/121218949493/spvr-jobs-dlq"
-sqs_queue_arn = "arn:aws:sqs:us-east-1:121218949493:spvr-jobs-queue"
-sqs_queue_url = "https://sqs.us-east-1.amazonaws.com/121218949493/spvr-jobs-queue"
+sqs_dlq_arn = "arn:aws:sqs:***:121218949493:spvr-jobs-dlq"
+sqs_dlq_url = "https://sqs.***.amazonaws.com/121218949493/spvr-jobs-dlq"
+sqs_queue_arn = "arn:aws:sqs:***:121218949493:spvr-jobs-queue"
+sqs_queue_url = "https://sqs.***.amazonaws.com/121218949493/spvr-jobs-queue"
 storage_files_bucket_arn = "arn:aws:s3:::oyd-project-dev-files"
 storage_files_bucket_name = "oyd-project-dev-files"
 storage_reports_bucket_arn = "arn:aws:s3:::oyd-project-dev-reports"
 storage_reports_bucket_name = "oyd-project-dev-reports"
-vpc_id = "vpc-0144a8eb600d17f19"
+vpc_id = "vpc-0c76e2c3408eec355"
+zone_id = "Z09673581TIXT01P7MFT9"
 ```
+[Ver evidencia completa aqui](evidence/terraform-output-full.txt)
 
-[evidence/async-foundation.txt](evidence/async-foundation.txt)
-
----
-
-### Deliverable B — Event-Driven Compute
-
-Terraform plan excerpt mostrando el recurso `aws_lambda_event_source_mapping` conectando SQS al Lambda Worker:
+`infra/evidence/terraform-output-full.txt` — salida de Terraform después de una ejecución exitosa desde un estado limpio, mostrando los siete componentes en funcionamiento. [Ver en github.](https://github.com/sandra381/course_project_S2_2026/actions/runs/27853515547/job/82436707451)
 
 ```
-module.compute.aws_lambda_event_source_mapping.sqs_worker: Refreshing state... [id=43fb7dfc-cafa-42e2-88bf-3ed240acf116]
-```
-
-[evidence/event-source-plan.txt](evidence/event-source-plan.txt)
-
-Screenshot de la consola AWS mostrando el trigger SQS conectado al Lambda Worker:
-
-![Event Source](evidence/event-source.png)
-
----
-
-### Deliverable C — Scheduled Jobs
-
-Screenshot del EventBridge Scheduler mostrando la regla `oyd-project-dev-cleanup-schedule` activa:
-
-![Scheduler](evidence/scheduler.png)
-
-Terraform plan excerpt mostrando el recurso `aws_scheduler_schedule`:
-```
+Run terraform plan \
+module.compute.data.archive_file.lambda_worker_zip: Reading...
+module.compute.data.archive_file.lambda_api_zip: Reading...
+module.scheduler.data.archive_file.lambda_cleanup_zip: Reading...
+module.scheduler.data.archive_file.lambda_cleanup_zip: Read complete after 0s [id=f7fec281bbd41dc382abc607778af9e386062803]
+module.compute.data.archive_file.lambda_worker_zip: Read complete after 0s [id=5274de323db3efcb05e902fb820da4a907e6f878]
+module.compute.data.archive_file.lambda_api_zip: Read complete after 0s [id=e7dd5e415d3143f1045d9caeac0d03fd5a76c589]
+module.iam.data.aws_caller_identity.current: Reading...
+module.iam.data.aws_region.current: Reading...
+module.iam.aws_iam_openid_connect_provider.github[0]: Refreshing state... [id=arn:aws:iam::121218949493:oidc-provider/token.actions.githubusercontent.com]
+module.iam.data.aws_region.current: Read complete after 0s [id=***]
+module.secrets.data.aws_region.current: Reading...
+module.secrets.data.aws_caller_identity.current: Reading...
+module.storage_files.aws_s3_bucket.this: Refreshing state... [id=oyd-project-dev-files]
+aws_acm_certificate.api: Refreshing state... [id=arn:aws:acm:***:121218949493:certificate/33abf93c-aee0-40cb-adbd-a97a15050719]
+module.ingress.aws_apigatewayv2_api.this: Refreshing state... [id=pt25bi31v0]
+module.secrets.data.aws_region.current: Read complete after 0s [id=***]
+module.database.aws_db_parameter_group.this: Refreshing state... [id=oyd-project-dev-mysql8]
+aws_s3_bucket.app_assets: Refreshing state... [id=oyd-project-app-assets-dev]
+module.iam.aws_iam_role.lambda_cleanup: Refreshing state... [id=oyd-project-dev-lambda-cleanup-role]
+module.iam.data.aws_caller_identity.current: Read complete after 0s [id=121218949493]
+module.iam.aws_iam_role.lambda_worker: Refreshing state... [id=oyd-project-dev-lambda-worker-role]
+module.async.aws_sqs_queue.dlq: Refreshing state... [id=https://sqs.***.amazonaws.com/121218949493/spvr-jobs-dlq]
+module.secrets.data.aws_caller_identity.current: Read complete after 0s [id=121218949493]
+module.compute.aws_lambda_layer_version.pymysql: Refreshing state... [id=arn:aws:lambda:***:121218949493:layer:oyd-project-dev-pymysql:5]
+module.compute.aws_lambda_layer_version.reportlab: Refreshing state... [id=arn:aws:lambda:***:121218949493:layer:oyd-project-dev-reportlab:4]
+module.iam.aws_iam_role.lambda_api: Refreshing state... [id=oyd-project-dev-lambda-api-role]
+module.iam.aws_iam_role.scheduler_exec: Refreshing state... [id=oyd-project-dev-scheduler-role]
+module.network.aws_vpc.this: Refreshing state... [id=vpc-0c76e2c3408eec355]
+module.storage_reports.aws_s3_bucket.this: Refreshing state... [id=oyd-project-dev-reports]
+module.observability.aws_sns_topic.alerts: Refreshing state... [id=arn:aws:sns:***:121218949493:oyd-project-dev-alerts]
+module.observability.data.aws_region.current: Reading...
+module.observability.data.aws_region.current: Read complete after 0s [id=***]
+module.async.aws_sqs_queue.main: Refreshing state... [id=https://sqs.***.amazonaws.com/121218949493/spvr-jobs-queue]
+module.iam.aws_iam_role_policy_attachment.lambda_cleanup_vpc: Refreshing state... [id=oyd-project-dev-lambda-cleanup-role-20260619215219752700000002]
+module.ingress.aws_apigatewayv2_stage.default: Refreshing state... [id=$default]
+aws_route53_record.cert_validation["api.grupo1.oyd.solid.com.gt"]: Refreshing state... [id=Z09673581TIXT01P7MFT9__524aeb6397020f54032a99b08bde5cef.api.grupo1.oyd.solid.com.gt._CNAME]
+module.iam.aws_iam_role_policy.lambda_cleanup_logs: Refreshing state... [id=oyd-project-dev-lambda-cleanup-role:oyd-project-dev-lambda-cleanup-logs]
+module.iam.aws_iam_role.ci_runner: Refreshing state... [id=oyd-project-dev-ci-runner-role]
+module.iam.aws_iam_role_policy.lambda_worker_logs: Refreshing state... [id=oyd-project-dev-lambda-worker-role:oyd-project-dev-lambda-worker-logs]
+module.iam.aws_iam_role_policy_attachment.lambda_worker_vpc: Refreshing state... [id=oyd-project-dev-lambda-worker-role-20260619215219856300000003]
+module.iam.aws_iam_role_policy.lambda_api_logs: Refreshing state... [id=oyd-project-dev-lambda-api-role:oyd-project-dev-lambda-api-logs]
+module.iam.aws_iam_role_policy_attachment.lambda_api_vpc: Refreshing state... [id=oyd-project-dev-lambda-api-role-20260619215219594300000001]
+module.observability.aws_budgets_budget.monthly: Refreshing state... [id=121218949493:oyd-project-dev-monthly-budget]
+module.observability.aws_sns_topic_subscription.alerts_email: Refreshing state... [id=arn:aws:sns:***:121218949493:oyd-project-dev-alerts:33b61ca8-48fc-4c05-88d3-4a83656a7361]
+aws_s3_bucket_server_side_encryption_configuration.app_assets: Refreshing state... [id=oyd-project-app-assets-dev]
+aws_s3_bucket_versioning.app_assets: Refreshing state... [id=oyd-project-app-assets-dev]
+module.observability.aws_cloudwatch_metric_alarm.sqs_queue_depth: Refreshing state... [id=oyd-project-dev-sqs-queue-depth]
+module.iam.aws_iam_role_policy.lambda_worker_sqs: Refreshing state... [id=oyd-project-dev-lambda-worker-role:oyd-project-dev-lambda-worker-sqs]
+module.iam.aws_iam_role_policy.lambda_api_sqs: Refreshing state... [id=oyd-project-dev-lambda-api-role:oyd-project-dev-lambda-api-sqs]
+module.secrets.aws_kms_key.main: Refreshing state... [id=bd88caed-c30b-4466-a0d8-be67f9977f94]
+aws_acm_certificate_validation.api: Refreshing state... [id=2026-06-19 22:19:26.377 +0000 UTC]
+module.storage_files.aws_s3_bucket_lifecycle_configuration.this: Refreshing state... [id=oyd-project-dev-files]
+module.storage_files.aws_s3_bucket_versioning.this: Refreshing state... [id=oyd-project-dev-files]
+module.storage_files.aws_s3_bucket_public_access_block.this: Refreshing state... [id=oyd-project-dev-files]
+module.storage_files.aws_s3_bucket_cors_configuration.this: Refreshing state... [id=oyd-project-dev-files]
+aws_cloudfront_distribution.api: Refreshing state... [id=E3MMSK80D3XQPN]
+module.storage_files.aws_s3_bucket_policy.this: Refreshing state... [id=oyd-project-dev-files]
+module.storage_reports.aws_s3_bucket_lifecycle_configuration.this: Refreshing state... [id=oyd-project-dev-reports]
+module.storage_reports.aws_s3_bucket_cors_configuration.this: Refreshing state... [id=oyd-project-dev-reports]
+module.storage_reports.aws_s3_bucket_public_access_block.this: Refreshing state... [id=oyd-project-dev-reports]
+module.storage_reports.aws_s3_bucket_versioning.this: Refreshing state... [id=oyd-project-dev-reports]
+module.secrets.aws_kms_alias.main: Refreshing state... [id=alias/oyd-project-dev-cmk]
+module.storage_reports.aws_s3_bucket_policy.this: Refreshing state... [id=oyd-project-dev-reports]
+module.iam.aws_iam_role_policy.ci_runner_scheduler: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-scheduler]
+module.iam.aws_iam_role_policy.ci_runner_ec2: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-ec2]
+module.iam.aws_iam_role_policy.ci_runner_state: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-state]
+module.iam.aws_iam_role_policy.ci_runner_apigw: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-apigw]
+module.iam.aws_iam_role_policy.ci_runner_observability: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-observability]
+module.iam.aws_iam_role_policy.lambda_api_s3: Refreshing state... [id=oyd-project-dev-lambda-api-role:oyd-project-dev-lambda-api-s3]
+module.iam.aws_iam_role_policy.ci_runner_dns_tls_observability: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-dns-tls-observability]
+module.iam.aws_iam_role_policy.ci_runner_iam: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-iam]
+module.iam.aws_iam_role_policy.ci_runner_secrets_kms: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-secrets-kms]
+module.iam.aws_iam_role_policy.ci_runner_rds: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-rds]
+module.iam.aws_iam_role_policy.ci_runner_sqs: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-sqs]
+module.iam.aws_iam_role_policy.ci_runner_s3_app: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-s3-app]
+module.iam.aws_iam_role_policy_attachment.ci_runner_readonly: Refreshing state... [id=oyd-project-dev-ci-runner-role-20260619215220431300000004]
+module.iam.aws_iam_role_policy.lambda_worker_s3: Refreshing state... [id=oyd-project-dev-lambda-worker-role:oyd-project-dev-lambda-worker-s3]
+module.iam.aws_iam_role_policy.ci_runner_lambda: Refreshing state... [id=oyd-project-dev-ci-runner-role:oyd-project-dev-ci-lambda]
+module.secrets.time_sleep.kms_propagation: Refreshing state... [id=2026-06-19T22:19:21Z]
+module.storage_files.aws_s3_bucket_server_side_encryption_configuration.this: Refreshing state... [id=oyd-project-dev-files]
+module.storage_reports.aws_s3_bucket_server_side_encryption_configuration.this: Refreshing state... [id=oyd-project-dev-reports]
+module.network.aws_internet_gateway.this: Refreshing state... [id=igw-00291b49419d3fcdc]
+module.network.aws_security_group.db_sg: Refreshing state... [id=sg-099ac276c8eedb161]
+module.network.aws_security_group.app_sg: Refreshing state... [id=sg-0c57900b9630ee4a2]
+module.network.aws_subnet.private[0]: Refreshing state... [id=subnet-073b55085b471caed]
+module.network.aws_subnet.private[1]: Refreshing state... [id=subnet-06c1afb7015f1ba80]
+module.network.aws_subnet.public[1]: Refreshing state... [id=subnet-01cac52d451a7c604]
+module.network.aws_subnet.public[0]: Refreshing state... [id=subnet-095cf58891c7d7472]
+module.network.aws_security_group.web_sg: Refreshing state... [id=sg-0242e8a30bb96524f]
+aws_route53_record.api: Refreshing state... [id=Z09673581TIXT01P7MFT9_api.grupo1.oyd.solid.com.gt_A]
+module.secrets.aws_secretsmanager_secret.db_password: Refreshing state... [id=arn:aws:secretsmanager:***:121218949493:secret:oyd-project-dev-db-password-GpBqZF]
+module.network.aws_route_table.public: Refreshing state... [id=rtb-052464067c2dd7e0a]
+module.network.aws_eip.nat[0]: Refreshing state... [id=eipalloc-0499ccd2c6570440e]
+module.network.aws_security_group_rule.db_ingress_from_app: Refreshing state... [id=sgrule-4279227649]
+module.network.aws_network_acl.private: Refreshing state... [id=acl-054d6711c0c562200]
+module.network.aws_network_acl.public: Refreshing state... [id=acl-026515742c0f5e153]
+module.network.aws_security_group_rule.app_ingress_from_web: Refreshing state... [id=sgrule-1797771813]
+module.secrets.aws_iam_role_policy.lambda_cleanup_secrets: Refreshing state... [id=oyd-project-dev-lambda-cleanup-role:oyd-project-dev-lambda-cleanup-secrets]
+module.secrets.aws_iam_role_policy.lambda_worker_secrets: Refreshing state... [id=oyd-project-dev-lambda-worker-role:oyd-project-dev-lambda-worker-secrets]
+module.secrets.aws_secretsmanager_secret_version.db_password: Refreshing state... [id=arn:aws:secretsmanager:***:121218949493:secret:oyd-project-dev-db-password-GpBqZF|terraform-20260619221922063700000007]
+module.secrets.aws_iam_role_policy.lambda_api_secrets: Refreshing state... [id=oyd-project-dev-lambda-api-role:oyd-project-dev-lambda-api-secrets]
+module.network.aws_route_table_association.public[0]: Refreshing state... [id=rtbassoc-0d4f40636e8db15e2]
+module.network.aws_route_table_association.public[1]: Refreshing state... [id=rtbassoc-024b4f5f5dd041509]
+module.database.aws_db_subnet_group.this: Refreshing state... [id=oyd-project-dev-subnet-group]
+module.network.aws_nat_gateway.this[0]: Refreshing state... [id=nat-0a3444c26d5708a58]
+module.network.aws_route_table.private[0]: Refreshing state... [id=rtb-026fd6bb5ad0ded5a]
+module.database.aws_db_instance.this: Refreshing state... [id=db-FAKXLMUMR3MUTG6M6EIJJBOUQE]
+module.network.aws_route_table_association.private[0]: Refreshing state... [id=rtbassoc-07486fa6ba65ad225]
+module.network.aws_route_table_association.private[1]: Refreshing state... [id=rtbassoc-081438976b1b800a4]
+module.iam.aws_iam_role_policy.lambda_api_rds: Refreshing state... [id=oyd-project-dev-lambda-api-role:oyd-project-dev-lambda-api-rds]
+module.scheduler.aws_lambda_function.cleanup: Refreshing state... [id=oyd-project-dev-cleanup]
+module.compute.aws_lambda_function.api: Refreshing state... [id=oyd-project-dev-api]
+module.compute.aws_lambda_function.worker: Refreshing state... [id=oyd-project-dev-worker]
+module.ingress.aws_apigatewayv2_integration.lambda: Refreshing state... [id=4v6af8i]
+module.ingress.aws_lambda_permission.api_gw: Refreshing state... [id=AllowAPIGatewayInvoke]
+module.observability.aws_cloudwatch_metric_alarm.lambda_api_errors: Refreshing state... [id=oyd-project-dev-lambda-api-errors]
+module.observability.aws_cloudwatch_dashboard.main: Refreshing state... [id=oyd-project-dev-dashboard]
+module.compute.aws_lambda_event_source_mapping.sqs_worker: Refreshing state... [id=35a424d0-8678-4f28-86a9-10319158b464]
+module.scheduler.aws_iam_role_policy.scheduler_invoke: Refreshing state... [id=oyd-project-dev-scheduler-role:oyd-project-dev-scheduler-invoke-policy]
+module.observability.aws_cloudwatch_log_group.lambda["cleanup"]: Refreshing state... [id=/dev/cleanup]
+module.observability.aws_cloudwatch_log_group.lambda["api"]: Refreshing state... [id=/dev/api]
 module.scheduler.aws_scheduler_schedule.cleanup: Refreshing state... [id=default/oyd-project-dev-cleanup-schedule]
+module.observability.aws_cloudwatch_log_group.lambda["worker"]: Refreshing state... [id=/dev/worker]
+module.ingress.aws_apigatewayv2_route.get: Refreshing state... [id=sbggy0l]
+module.ingress.aws_apigatewayv2_route.post: Refreshing state... [id=zw7ou66]
+module.ingress.aws_apigatewayv2_route.root: Refreshing state... [id=nuq5uya]
+
+No changes. Your infrastructure matches the configuration.
+
+Terraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+
 ```
-[evidence/scheduler-plan.txt](evidence/scheduler-plan.txt)
+[Ver evidencia completa aqui](evidence/idempotent-plan.txt)
+
+`infra/evidence/idempotent-plan.txt` — segundo plan de Terraform que confirma "No changes" (idempotencia, código de salida 0), verificado mediante GitHub Actions (entorno Linux, fuente oficial para CI/CD). [Ver en github.](https://github.com/sandra381/course_project_S2_2026/actions/runs/27854398178/job/82439082936#step:6:140)
+
+### Entregable I — Cobertura Completa de Infraestructura como Código (IaC)
+
+`infra/docs/iac-coverage.md` — tabla de mapeo de componentes a IaC y declaración de confirmación de recursos administrados. [Ver documento aqui](docs/iac-covarage.md)
+
+```
+aws_acm_certificate.api
+aws_acm_certificate_validation.api
+aws_cloudfront_distribution.api
+aws_route53_record.api
+aws_route53_record.cert_validation["api.grupo1.oyd.solid.com.gt"]
+aws_s3_bucket.app_assets
+aws_s3_bucket_server_side_encryption_configuration.app_assets
+aws_s3_bucket_versioning.app_assets
+module.async.aws_sqs_queue.dlq
+module.async.aws_sqs_queue.main
+module.compute.data.archive_file.lambda_api_zip
+module.compute.data.archive_file.lambda_worker_zip
+module.compute.aws_lambda_event_source_mapping.sqs_worker
+module.compute.aws_lambda_function.api
+module.compute.aws_lambda_function.worker
+module.compute.aws_lambda_layer_version.pymysql
+module.compute.aws_lambda_layer_version.reportlab
+module.database.aws_db_instance.this
+module.database.aws_db_parameter_group.this
+module.database.aws_db_subnet_group.this
+module.iam.data.aws_caller_identity.current
+module.iam.data.aws_region.current
+module.iam.aws_iam_openid_connect_provider.github[0]
+module.iam.aws_iam_role.ci_runner
+module.iam.aws_iam_role.lambda_api
+module.iam.aws_iam_role.lambda_cleanup
+module.iam.aws_iam_role.lambda_worker
+module.iam.aws_iam_role.scheduler_exec
+module.iam.aws_iam_role_policy.ci_runner_apigw
+module.iam.aws_iam_role_policy.ci_runner_dns_tls_observability
+module.iam.aws_iam_role_policy.ci_runner_ec2
+module.iam.aws_iam_role_policy.ci_runner_iam
+module.iam.aws_iam_role_policy.ci_runner_lambda
+module.iam.aws_iam_role_policy.ci_runner_observability
+module.iam.aws_iam_role_policy.ci_runner_rds
+module.iam.aws_iam_role_policy.ci_runner_s3_app
+module.iam.aws_iam_role_policy.ci_runner_scheduler
+module.iam.aws_iam_role_policy.ci_runner_secrets_kms
+module.iam.aws_iam_role_policy.ci_runner_sqs
+module.iam.aws_iam_role_policy.ci_runner_state
+module.iam.aws_iam_role_policy.lambda_api_logs
+module.iam.aws_iam_role_policy.lambda_api_rds
+module.iam.aws_iam_role_policy.lambda_api_s3
+module.iam.aws_iam_role_policy.lambda_api_sqs
+module.iam.aws_iam_role_policy.lambda_cleanup_logs
+module.iam.aws_iam_role_policy.lambda_worker_logs
+module.iam.aws_iam_role_policy.lambda_worker_s3
+module.iam.aws_iam_role_policy.lambda_worker_sqs
+module.iam.aws_iam_role_policy_attachment.ci_runner_readonly
+module.iam.aws_iam_role_policy_attachment.lambda_api_vpc
+module.iam.aws_iam_role_policy_attachment.lambda_cleanup_vpc
+module.iam.aws_iam_role_policy_attachment.lambda_worker_vpc
+module.ingress.aws_apigatewayv2_api.this
+module.ingress.aws_apigatewayv2_integration.lambda
+module.ingress.aws_apigatewayv2_route.get
+module.ingress.aws_apigatewayv2_route.post
+module.ingress.aws_apigatewayv2_route.root
+module.ingress.aws_apigatewayv2_stage.default
+module.ingress.aws_lambda_permission.api_gw
+module.network.aws_eip.nat[0]
+module.network.aws_internet_gateway.this
+module.network.aws_nat_gateway.this[0]
+module.network.aws_network_acl.private
+module.network.aws_network_acl.public
+module.network.aws_route_table.private[0]
+module.network.aws_route_table.public
+module.network.aws_route_table_association.private[0]
+module.network.aws_route_table_association.private[1]
+module.network.aws_route_table_association.public[0]
+module.network.aws_route_table_association.public[1]
+module.network.aws_security_group.app_sg
+module.network.aws_security_group.db_sg
+module.network.aws_security_group.web_sg
+module.network.aws_security_group_rule.app_ingress_from_web
+module.network.aws_security_group_rule.db_ingress_from_app
+module.network.aws_subnet.private[0]
+module.network.aws_subnet.private[1]
+module.network.aws_subnet.public[0]
+module.network.aws_subnet.public[1]
+module.network.aws_vpc.this
+module.observability.data.aws_region.current
+module.observability.aws_budgets_budget.monthly
+module.observability.aws_cloudwatch_dashboard.main
+module.observability.aws_cloudwatch_log_group.lambda["api"]
+module.observability.aws_cloudwatch_log_group.lambda["cleanup"]
+module.observability.aws_cloudwatch_log_group.lambda["worker"]
+module.observability.aws_cloudwatch_metric_alarm.lambda_api_errors
+module.observability.aws_cloudwatch_metric_alarm.sqs_queue_depth
+module.observability.aws_sns_topic.alerts
+module.observability.aws_sns_topic_subscription.alerts_email
+module.scheduler.data.archive_file.lambda_cleanup_zip
+module.scheduler.aws_iam_role_policy.scheduler_invoke
+module.scheduler.aws_lambda_function.cleanup
+module.scheduler.aws_scheduler_schedule.cleanup
+module.secrets.data.aws_caller_identity.current
+module.secrets.data.aws_region.current
+module.secrets.aws_iam_role_policy.lambda_api_secrets
+module.secrets.aws_iam_role_policy.lambda_cleanup_secrets
+module.secrets.aws_iam_role_policy.lambda_worker_secrets
+module.secrets.aws_kms_alias.main
+module.secrets.aws_kms_key.main
+module.secrets.aws_secretsmanager_secret.db_password
+module.secrets.aws_secretsmanager_secret_version.db_password
+module.secrets.time_sleep.kms_propagation
+module.storage_files.aws_s3_bucket.this
+module.storage_files.aws_s3_bucket_cors_configuration.this
+module.storage_files.aws_s3_bucket_lifecycle_configuration.this
+module.storage_files.aws_s3_bucket_policy.this
+module.storage_files.aws_s3_bucket_public_access_block.this
+module.storage_files.aws_s3_bucket_server_side_encryption_configuration.this
+module.storage_files.aws_s3_bucket_versioning.this
+module.storage_reports.aws_s3_bucket.this
+module.storage_reports.aws_s3_bucket_cors_configuration.this
+module.storage_reports.aws_s3_bucket_lifecycle_configuration.this
+module.storage_reports.aws_s3_bucket_policy.this
+module.storage_reports.aws_s3_bucket_public_access_block.this
+module.storage_reports.aws_s3_bucket_server_side_encryption_configuration.this
+module.storage_reports.aws_s3_bucket_versioning.this
+```
+`infra/evidence/state-list.txt` — salida completa del comando `terraform state list`. [Ver evidencia aqui](evidence/state-list.txt)
+
+![Deployed Components](evidence/deployed-components.png)
 
 ---
 
-### Deliverable D — Full CD Pipeline
+## Funcionalidades adicionales de la aplicación
 
-PR donde el workflow de plan corrió sobre los recursos async y posteó el plan combinado (dev + staging) como comentario:
+Más allá de los entregables de infraestructura del curso, se implementaron las siguientes funcionalidades de negocio sobre la arquitectura ya provisionada — sin modificar VPC, RDS, API Gateway, S3, CloudFront ni Route53 ya existentes:
 
-[PR #16 — Fix/staging ok
-](https://github.com/sandra381/course_project_S2_2026/pull/16)
+### Autenticación con bcrypt + JWT
 
-Screenshot de Settings → Environments mostrando `dev` (automático) y `staging` (con reviewer requerido):
+- Contraseñas almacenadas como hash (`bcrypt`), nunca en texto plano (columna `password_hash` en `usuarios`)
+- Tokens de sesión reales (`PyJWT`), con expiración de 8 horas
+- Empaquetado como dos Lambda Layers nuevos (`bcrypt`, compilado para Linux x86_64; `pyjwt`, Python puro), agregados únicamente a Lambda API
 
-![GitHub Environments](evidence/github-environments.png)
+### Notificación por correo (Amazon SES)
 
-Screenshot del job `Terraform Apply — dev` completando automáticamente tras el merge:
+- Lambda Worker envía un correo al analista cuando su reporte está listo, con un enlace de descarga directo (presigned URL, válido 30 minutos)
+- Modo Sandbox de SES: remitente y destinatarios de prueba verificados manualmente en consola
 
-![CI Apply Dev](evidence/ci-apply-dev.png)
+### Reporte individual por vendedor
 
-Screenshot del gate de aprobación de `Terraform Apply — staging`, mostrando el reviewer que aprobó:
+- Nueva tabla `reportes_vendedor`: el Worker calcula, por cada CSV procesado, el desempeño de cada vendedor presente (total vendido, productos, clientes, ranking, top productos)
+- Endpoints `GET /seller/dashboard` (resumen acumulado) y `GET /seller/history` (historial completo) expuestos en Lambda API
 
-![CI Apply Staging](evidence/ci-apply-staging.png)
+### Control de acceso por rol
 
-Screenshot del workflow de destroy mostrando el trigger `workflow_dispatch` y el input `environment`:
-
-![CI Destroy](evidence/ci-destroy.png)
-
-Screenshot del workflow de drift detection mostrando el plan publicado en el step summary:
-
-![CI Drift](evidence/ci-drift.png)
-
-Screenshot de Settings → Rules → Rulesets mostrando el ruleset Active en `main` con los status checks requeridos, branch-up-to-date, block-force-push y block-deletion:
-
-![Ruleset Config](evidence/ruleset-config.png)
-
-Screenshot de un PR mostrando el merge bloqueado por un check requerido pendiente/fallando y la rama desactualizada respecto a `main`:
-![Ruleset Blocked Merge](evidence/ruleset-blocked-merge.png)
-
----
-
-### Deliverable E — End-to-End Async Proof
-
-`curl -X POST /jobs/enqueue` mostrando HTTP 202 y el `message_id` real generado por SQS:
-```
-Note: Unnecessary use of -X or --request, POST is already inferred.
-* Host 200tq8aa9d.execute-api.us-east-1.amazonaws.com:443 was resolved.
-* IPv6: (none)
-* IPv4: 32.196.92.18, 54.208.231.71
-*   Trying 32.196.92.18:443...
-* ALPN: curl offers h2,http/1.1
-* TLSv1.3 (OUT), TLS handshake, Client hello (1):
-* SSL Trust Anchors:
-*   Native: Windows System Stores ROOT+CA
-* TLSv1.3 (IN), TLS handshake, Server hello (2):
-* TLSv1.3 (IN), TLS handshake, Unknown (8):
-* TLSv1.3 (IN), TLS handshake, Certificate (11):
-* TLSv1.3 (IN), TLS handshake, CERT verify (15):
-* TLSv1.3 (IN), TLS handshake, Finished (20):
-* TLSv1.3 (OUT), TLS handshake, Finished (20):
-* SSL connection using TLSv1.3 / TLS_AES_128_GCM_SHA256 / [blank] / UNDEF
-* ALPN: server accepted h2
-* Server certificate:
-*   subject: CN=*.execute-api.us-east-1.amazonaws.com
-*   start date: Apr 22 00:00:00 2026 GMT
-*   expire date: Nov  5 23:59:59 2026 GMT
-*   issuer: C=US; O=Amazon; CN=Amazon RSA 2048 M01
-*   Certificate level 0: Public key type ? (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
-*   Certificate level 1: Public key type ? (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
-*   Certificate level 2: Public key type ? (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
-*   Certificate level 3: Public key type ? (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
-*   subjectAltName: "200tq8aa9d.execute-api.us-east-1.amazonaws.com" matches cert's "*.execute-api.us-east-1.amazonaws.com"
-* OpenSSL verify result: 0
-* SSL certificate verified via OpenSSL.
-* Established connection to 200tq8aa9d.execute-api.us-east-1.amazonaws.com (32.196.92.18 port 443) from 192.168.0.11 port 52057 
-* using HTTP/2
-* [HTTP/2] [1] OPENED stream for https://200tq8aa9d.execute-api.us-east-1.amazonaws.com/jobs/enqueue
-* [HTTP/2] [1] [:method: POST]
-* [HTTP/2] [1] [:scheme: https]
-* [HTTP/2] [1] [:authority: 200tq8aa9d.execute-api.us-east-1.amazonaws.com]
-* [HTTP/2] [1] [:path: /jobs/enqueue]
-* [HTTP/2] [1] [user-agent: curl/8.19.0]
-* [HTTP/2] [1] [accept: */*]
-* [HTTP/2] [1] [content-type: application/json]
-* [HTTP/2] [1] [content-length: 27]
-> POST /jobs/enqueue HTTP/2
-> Host: 200tq8aa9d.execute-api.us-east-1.amazonaws.com
-> User-Agent: curl/8.19.0
-> Accept: */*
-> Content-Type: application/json
-> Content-Length: 27
-> 
-* upload completely sent off: 27 bytes
-< HTTP/2 202 
-< date: Wed, 17 Jun 2026 18:08:23 GMT
-< content-type: application/json
-< content-length: 89
-< apigw-requestid: fHhXtiMtIAMEMow=
-< 
-{"message_id": "a56f0462-3709-4c00-a560-8c535aaea0be", "job_id": 3, "status": "enqueued"}* Connection #0 to host 200tq8aa9d.execute-api.us-east-1.amazonaws.com:443 left intact
-```
-[evidence/async-enqueue.txt](evidence/async-enqueue.txt)
-
-Screenshot de CloudWatch Logs mostrando al Lambda Worker procesando el mensaje (`[worker] Procesando job_id=... message_id=...`):
-
-![Async Consumer](evidence/async-consumer.png)
-
-Screenshot del bucket S3 `oyd-project-dev-reports` mostrando el objeto PDF generado por el Worker:
-
-![Async Object](evidence/async-object.png)
+- Analista: ve únicamente sus propios trabajos y reportes (filtrado por `id_usuario`)
+- Gerente y Auditor: ven el historial completo de todos los usuarios; el Auditor además puede descargar el CSV original junto al PDF generado, sin permisos de modificación
+- Administrador: panel de monitoreo con métricas y registro de errores en tiempo real
 
 ---
 
@@ -329,7 +604,7 @@ Screenshot del bucket S3 `oyd-project-dev-reports` mostrando el objeto PDF gener
 - [Delivery 2 — Resumen](docs/delivery-2-summary.md)
 - [Delivery 3 — Resumen](docs/delivery-3-summary.md)
 - [Delivery 4 — Resumen](docs/delivery-4-summary.md)
-
+- [Delivery 5 — Resumen](docs/delivery-5-summary.md)
 ---
 
 ## Team
@@ -337,5 +612,7 @@ Screenshot del bucket S3 `oyd-project-dev-reports` mostrando el objeto PDF gener
 - Gabriela Lucia Navarro de León — 20000127
 - Diego Alejandro Sican Olivares — 19001690
 - Sandra Daniela Soria Palma — 20002619
+
+
 
 Universidad Galileo — Postgrado en Diseño y Desarrollo de Software

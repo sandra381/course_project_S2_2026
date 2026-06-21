@@ -12,6 +12,7 @@ const NAV_BY_ROL = {
   ],
   vendedor: [
     { id: "seller",    label: "Mi Desempeño",     icon: "📊" },
+    { id: "seller-history",   label: "Mi Historial",        icon: "🕐" },
   ],
   administrador: [
     { id: "dashboard", label: "Dashboard",        icon: "⊞" },

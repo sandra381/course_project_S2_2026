@@ -351,7 +351,7 @@ resource "aws_iam_role" "ci_runner" {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
-          StringLike = {
+          StringEquals = {
             "token.actions.githubusercontent.com:sub" = "repo:${var.github_org}/${var.github_repo}:*"
           }
         }
@@ -1047,3 +1047,17 @@ resource "aws_iam_role_policy_attachment" "ci_runner_ses" {
   policy_arn = aws_iam_policy.ci_runner_ses.arn
 }
 
+resource "aws_iam_role_policy" "lambda_worker_ses" {
+  name = "${local.prefix}-lambda-worker-ses"
+  role = aws_iam_role.lambda_worker.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "SendReportEmail"
+      Effect   = "Allow"
+      Action   = ["ses:SendEmail", "ses:SendRawEmail"]
+      Resource = "*"
+    }]
+  })
+}

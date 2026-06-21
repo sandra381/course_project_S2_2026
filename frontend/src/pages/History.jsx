@@ -5,6 +5,7 @@ import Spinner from "../components/Spinner.jsx";
 import { StatusBadge } from "../components/Badge.jsx";
 import { getReports, getReportDownloadUrl, getReportCsvUrl, IS_DEMO } from "../api/client.js";
 import { DEMO_REPORTS } from "../api/demo.js";
+import { parseUTC } from "../api/client.js";  // agregar al import existente
 
 export default function History({ user, setPage, setSelectedReport }) {
   const [reports, setReports] = useState([]);
@@ -125,7 +126,7 @@ export default function History({ user, setPage, setSelectedReport }) {
                     </td>
                   )}
                   <td style={{ padding: "14px 20px", fontSize: 13, color: C.slateL }}>
-                    {new Date(r.fecha_generado).toLocaleString("es-GT")}
+                    {parseUTC(r.fecha_generado).toLocaleString("es-GT", { timeZone: "America/Guatemala" })}
                   </td>
                   <td style={{ padding: "14px 20px" }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -144,7 +145,6 @@ export default function History({ user, setPage, setSelectedReport }) {
                         </button>
                       )}
                       {isReadOnly && (
-<<<<<<< HEAD
                         <button
                           onClick={async () => {
                             try {
@@ -158,9 +158,6 @@ export default function History({ user, setPage, setSelectedReport }) {
                         >
                           Ver CSV original
                         </button>
-=======
-                        <span style={{ fontSize: 11, color: C.slateL }}>Solo lectura</span>
->>>>>>> origin/main
                       )}
                     </div>
                   </td>

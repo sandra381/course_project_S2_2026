@@ -8,6 +8,7 @@ from botocore.client import Config
 import bcrypt
 import jwt
 from datetime import timedelta
+from decimal import Decimal
 
 # ─── CONFIGURACION ─────────────────────────────────────────────────────────────
 DB_HOST           = os.environ["DB_HOST"].split(":")[0]
@@ -41,8 +42,9 @@ def serialize_row(row):
     for key, value in row.items():
         if hasattr(value, "isoformat"):
             row[key] = value.isoformat()
+        elif isinstance(value, Decimal):
+            row[key] = float(value)
     return row
-
 
 def ok(body):
     return {
@@ -142,13 +144,34 @@ def handler(event, context):
                 except Exception as alter_err:
                     if "1060" not in str(alter_err):
                         raise
+                try:
+                    cursor.execute("""
+                        ALTER TABLE errores
+                        MODIFY COLUMN fecha DATETIME NOT NULL
+                    """)
+                except Exception as alter_err:
+                    print(f"[setup] No se pudo alterar columna fecha de errores: {str(alter_err)}")
+                try:
+                    cursor.execute("""
+                        ALTER TABLE trabajos
+                        MODIFY COLUMN fecha_carga DATETIME NOT NULL
+                    """)
+                except Exception as alter_err:
+                    print(f"[setup] No se pudo alterar columna fecha_carga: {str(alter_err)}")
+                try:
+                    cursor.execute("""
+                        ALTER TABLE reportes
+                        MODIFY COLUMN fecha_generado DATETIME NOT NULL
+                    """)
+                except Exception as alter_err:
+                    print(f"[setup] No se pudo alterar columna fecha_generado: {str(alter_err)}")            
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS trabajos (
                         job_id INT NOT NULL AUTO_INCREMENT,
                         id_usuario INT NOT NULL,
                         nombre_archivo VARCHAR(255) NOT NULL,
                         estado VARCHAR(50) NOT NULL,
-                        fecha_carga DATE NOT NULL,
+                        fecha_carga DATETIME NOT NULL,
                         csv_s3_key VARCHAR(500) NOT NULL,
                         PRIMARY KEY (job_id),
                         FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
@@ -160,7 +183,7 @@ def handler(event, context):
                         job_id INT NOT NULL,
                         periodo VARCHAR(50) NOT NULL,
                         pdf_s3_key VARCHAR(500) NOT NULL,
-                        fecha_generado DATE NOT NULL,
+                        fecha_generado DATETIME NOT NULL,
                         PRIMARY KEY (id_reporte),
                         FOREIGN KEY (job_id) REFERENCES trabajos(job_id)
                     )
@@ -170,11 +193,29 @@ def handler(event, context):
                         id_error INT NOT NULL AUTO_INCREMENT,
                         job_id INT NOT NULL,
                         id_usuario INT NOT NULL,
-                        fecha DATE NOT NULL,
+                        fecha DATETIME NOT NULL,
                         descripcion VARCHAR(500) NOT NULL,
                         PRIMARY KEY (id_error),
                         FOREIGN KEY (job_id) REFERENCES trabajos(job_id),
                         FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+                    )
+                """)
+                # ── NUEVO: tabla de reportes individuales por vendedor ──────────
+                # Cada fila = el desempeño de UN vendedor en UN CSV/período
+                # específico, generado por el Worker al procesar ese CSV.
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS reportes_vendedor (
+                        id_reporte_vendedor INT NOT NULL AUTO_INCREMENT,
+                        job_id INT NOT NULL,
+                        nombre_vendedor VARCHAR(100) NOT NULL,
+                        periodo VARCHAR(50) NOT NULL,
+                        total_vendido DECIMAL(12,2) NOT NULL,
+                        productos_vendidos INT NOT NULL,
+                        clientes_atendidos INT NOT NULL,
+                        json_s3_key VARCHAR(500) NOT NULL,
+                        fecha_generado DATETIME NOT NULL,
+                        PRIMARY KEY (id_reporte_vendedor),
+                        FOREIGN KEY (job_id) REFERENCES trabajos(job_id)
                     )
                 """)
                 # Insertar usuario admin con contraseña hasheada
@@ -203,10 +244,12 @@ def handler(event, context):
         except Exception as e:
             return error(500, str(e))
 
+
     elif method == "POST" and path == "/admin/reset":
         try:
             conn = get_db_connection()
             with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM reportes_vendedor")
                 cursor.execute("DELETE FROM errores")
                 cursor.execute("DELETE FROM reportes")
                 cursor.execute("DELETE FROM trabajos")
@@ -215,6 +258,7 @@ def handler(event, context):
                 cursor.execute("ALTER TABLE trabajos AUTO_INCREMENT = 1")
                 cursor.execute("ALTER TABLE reportes AUTO_INCREMENT = 1")
                 cursor.execute("ALTER TABLE errores AUTO_INCREMENT = 1")
+                cursor.execute("ALTER TABLE reportes_vendedor AUTO_INCREMENT = 1")
             conn.commit()
             conn.close()
             return ok({"message": "Tablas vaciadas correctamente"})
@@ -262,7 +306,7 @@ def handler(event, context):
                     INSERT INTO trabajos (id_usuario, nombre_archivo, estado, fecha_carga, csv_s3_key)
                     VALUES (%s, %s, 'PENDIENTE', %s, %s)
                     """,
-                    (id_usuario, filename, datetime.utcnow().date(), s3_key)
+                    (id_usuario, filename, datetime.utcnow(), s3_key)
                 )
                 job_id = cursor.lastrowid
             conn.commit()
@@ -504,6 +548,88 @@ def handler(event, context):
                 rows = [serialize_row(r) for r in cursor.fetchall()]
             conn.close()
             return ok({"errors": rows})
+        except Exception as e:
+            return error(500, str(e))
+        
+
+    elif method == "GET" and path == "/seller/dashboard":
+        try:
+            query_params = event.get("queryStringParameters") or {}
+            nombre = query_params.get("nombre")
+
+            if not nombre:
+                return error(400, "nombre del vendedor es requerido")
+
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT total_vendido, productos_vendidos, clientes_atendidos,
+                        json_s3_key, periodo, fecha_generado
+                    FROM reportes_vendedor
+                    WHERE nombre_vendedor = %s
+                    ORDER BY fecha_generado DESC
+                """, (nombre,))
+                reportes = cursor.fetchall()
+            conn.close()
+
+            if not reportes:
+                return ok({
+                    "total_vendido": 0, "productos_vendidos": 0,
+                    "clientes_atendidos": 0, "ranking_posicion": 0, "ranking_total": 0,
+                    "top_productos": [], "evolucion_mensual": []
+                })
+
+            # Acumulado de todos los reportes históricos de este vendedor
+            total_vendido       = float(sum(r["total_vendido"] for r in reportes))
+            productos_vendidos  = int(sum(r["productos_vendidos"] for r in reportes))
+            clientes_atendidos  = max(r["clientes_atendidos"] for r in reportes)
+
+            # El más reciente trae el ranking más actualizado y el top de productos
+            mas_reciente = reportes[0]
+            obj = s3.get_object(Bucket=S3_REPORTS_BUCKET, Key=mas_reciente["json_s3_key"])
+            datos_recientes = json.loads(obj["Body"].read())
+
+            evolucion_mensual = [
+                {
+                    "mes": datetime.strptime(str(r["fecha_generado"])[:10], "%Y-%m-%d").strftime("%b"),
+                    "total": float(r["total_vendido"])
+                }
+                for r in reversed(reportes)
+            ]
+
+            return ok({
+                "total_vendido": total_vendido,
+                "productos_vendidos": productos_vendidos,
+                "clientes_atendidos": clientes_atendidos,
+                "ranking_posicion": datos_recientes.get("ranking_posicion", 0),
+                "ranking_total": datos_recientes.get("ranking_total", 0),
+                "top_productos": datos_recientes.get("top_productos", []),
+                "evolucion_mensual": evolucion_mensual
+            })
+        except Exception as e:
+            return error(500, str(e))
+
+    elif method == "GET" and path == "/seller/history":
+        try:
+            query_params = event.get("queryStringParameters") or {}
+            nombre = query_params.get("nombre")
+
+            if not nombre:
+                return error(400, "nombre del vendedor es requerido")
+
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id_reporte_vendedor, job_id, periodo, total_vendido,
+                        productos_vendidos, clientes_atendidos, fecha_generado
+                    FROM reportes_vendedor
+                    WHERE nombre_vendedor = %s
+                    ORDER BY fecha_generado DESC
+                    LIMIT 20
+                """, (nombre,))
+                rows = [serialize_row(r) for r in cursor.fetchall()]
+            conn.close()
+            return ok({"reportes": rows})
         except Exception as e:
             return error(500, str(e))
 

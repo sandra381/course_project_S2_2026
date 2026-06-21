@@ -14,6 +14,7 @@ import History         from "./pages/History.jsx";
 import ReportDetail    from "./pages/ReportDetail.jsx";
 import SellerDashboard from "./pages/SellerDashboard.jsx";
 import ErrorLog        from "./pages/ErrorLog.jsx";
+import SellerHistory from "./pages/SellerHistory.jsx";
 
 // Página inicial por rol
 const DEFAULT_PAGE = {
@@ -30,7 +31,15 @@ export default function App() {
     catch { return null; }
   });
 
-  const [page, setPage]                 = useState("dashboard");
+  const [page, setPage] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("spvr_user"));
+      return u ? (DEFAULT_PAGE[u.rol] || "dashboard") : "dashboard";
+    } catch {
+      return "dashboard";
+    }
+  });
+
   const [selectedJob, setSelectedJob]   = useState(null); // para JobStatus
   const [selectedReport, setSelectedReport] = useState(null); // para ReportDetail
 
@@ -73,6 +82,8 @@ export default function App() {
         return <ReportDetail report={selectedReport} setPage={setPage} />;
       case "seller":
         return <SellerDashboard user={user} />;
+      case "seller-history":
+        return <SellerHistory user={user} />;  
       case "errors":
         return <ErrorLog />;
       default:

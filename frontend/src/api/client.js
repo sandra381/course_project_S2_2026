@@ -107,9 +107,28 @@ export const postReport = (data) =>
   request("POST", "/reports", data);
 
 // ─────────────────────────────────────────────────────────────
+// SELLER DASHBOARD
+// ─────────────────────────────────────────────────────────────
+
+// GET /seller/dashboard — totales acumulados, ranking, top productos
+// y evolución mensual del vendedor autenticado
+export const getSellerDashboard = (nombre) =>
+  request("GET", `/seller/dashboard?nombre=${encodeURIComponent(nombre)}`);
+
+// GET /seller/history — últimos 20 reportes generados para este vendedor
+export const getSellerHistory = (nombre) =>
+  request("GET", `/seller/history?nombre=${encodeURIComponent(nombre)}`);
+
+// ─────────────────────────────────────────────────────────────
 // ERRORES
 // ─────────────────────────────────────────────────────────────
 
 // GET /errors — registro de errores (solo administrador)
 export const getErrors = () =>
   request("GET", "/errors");
+
+export function parseUTC(fechaStr) {
+  if (!fechaStr) return new Date();
+  const tieneZona = /Z|[+-]\d{2}:?\d{2}$/.test(fechaStr);
+  return new Date(tieneZona ? fechaStr : fechaStr + "Z");
+}

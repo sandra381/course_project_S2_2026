@@ -4,6 +4,7 @@ import Card from "../components/Card.jsx";
 import Spinner from "../components/Spinner.jsx";
 import { getJob, IS_DEMO } from "../api/client.js";
 
+
 const STEPS = [
   { key: "recibido",     label: "Archivo recibido",    sub: "CSV cargado exitosamente"          },
   { key: "validacion",   label: "Validación del CSV",  sub: "Estructura y tipos de datos"       },
@@ -198,7 +199,7 @@ export default function JobStatus({ job }) {
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 13 }}>
             {[
-              { label: "🕐 Inicio",    value: new Date(job.fecha_carga).toLocaleString("es-GT") },
+              { label: "🕐 Inicio",    value: new Date(job.fecha_carga).toLocaleString("es-GT", { timeZone: "America/Guatemala" }) },
               { label: "⏱ Estado",    value: jobData?.estado || "PENDIENTE" },
               { label: "📄 Archivo",   value: job.nombre_archivo },
               { label: "🆔 Job ID",    value: job.job_id, mono: true },

@@ -3,8 +3,9 @@ import { C } from "../styles.js";
 import Card from "../components/Card.jsx";
 import Button from "../components/Button.jsx";
 import Spinner from "../components/Spinner.jsx";
-import { IS_DEMO } from "../api/client.js";
+import { getJobs, getErrors, IS_DEMO } from "../api/client.js";
 import { DEMO_ERRORS } from "../api/demo.js";
+import { parseUTC } from "../api/client.js";  
 
 const DEMO_STATS = {
   total_trabajos: 1284,
@@ -12,26 +13,62 @@ const DEMO_STATS = {
   errores_hoy: 12,
   errores_pendientes: 5,
   usuarios_activos: 18,
-  tiempo_promedio: "2.5 min",
 };
 
 export default function AdminDashboard({ setPage }) {
-  const [stats, setStats]         = useState(DEMO_STATS);
-  const [errores, setErrores]     = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [stats, setStats]     = useState(DEMO_STATS);
+  const [errores, setErrores] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      await new Promise((r) => setTimeout(r, 400));
-      setErrores(DEMO_ERRORS.slice(0, 3)); // últimos 3 errores
-      setLoading(false);
+      try {
+        if (IS_DEMO) {
+          await new Promise((r) => setTimeout(r, 400));
+          setStats(DEMO_STATS);
+          setErrores(DEMO_ERRORS.slice(0, 3));
+        } else {
+          // GET /jobs no trae "usuarios_activos" directo — lo aproximamos
+          // contando id_usuario únicos entre los trabajos existentes.
+          const [jobsData, errorsData] = await Promise.all([getJobs(), getErrors()]);
+          const jobs   = jobsData.jobs || [];
+          const errors = errorsData.errors || [];
+
+          const hoy = new Date().toDateString();
+          const trabajosHoy = jobs.filter(
+            (j) => new Date(j.fecha_carga).toDateString() === hoy
+          ).length;
+          const erroresHoy = errors.filter(
+            (e) => new Date(e.fecha).toDateString() === hoy
+          ).length;
+          const usuariosActivos = new Set(jobs.map((j) => j.id_usuario)).size;
+
+          setStats({
+            total_trabajos: jobs.length,
+            trabajos_hoy: trabajosHoy,
+            errores_hoy: erroresHoy,
+            errores_pendientes: errors.length,
+            usuarios_activos: usuariosActivos,
+          });
+
+          // Los 3 errores más recientes para la vista resumen
+          setErrores(
+            [...errors]
+              .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+              .slice(0, 3)
+          );
+        }
+      } catch (e) {
+        setErrores([]);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
 
   return (
     <div className="fade-in">
-      {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800 }}>Panel de Administración</h1>
         <p style={{ color: C.slateL, fontSize: 13, marginTop: 4 }}>
@@ -39,12 +76,11 @@ export default function AdminDashboard({ setPage }) {
         </p>
       </div>
 
-      {/* Métricas del sistema */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
         {[
           { label: "Total Trabajos Procesados", value: stats.total_trabajos.toLocaleString(), delta: `+${stats.trabajos_hoy} hoy`, icon: "📊", color: C.coral },
-          { label: "Errores Hoy",               value: stats.errores_hoy,                     delta: `${stats.errores_pendientes} sin revisar`, icon: "⚠️", color: C.red   },
-          { label: "Usuarios Activos",           value: stats.usuarios_activos,                delta: "En el sistema",           icon: "👥", color: C.blue  },
+          { label: "Errores Hoy",               value: stats.errores_hoy,                     delta: `${stats.errores_pendientes} en total`, icon: "⚠️", color: C.red   },
+          { label: "Usuarios Activos",           value: stats.usuarios_activos,                delta: "Han subido trabajos",  icon: "👥", color: C.blue  },
         ].map((m, i) => (
           <Card key={i} style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
@@ -57,7 +93,6 @@ export default function AdminDashboard({ setPage }) {
         ))}
       </div>
 
-      {/* Últimos errores */}
       <Card>
         <div style={{ padding: "18px 24px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${C.gray}` }}>
           <div>
@@ -73,6 +108,10 @@ export default function AdminDashboard({ setPage }) {
 
         {loading ? (
           <div style={{ padding: 48, display: "flex", justifyContent: "center" }}><Spinner /></div>
+        ) : errores.length === 0 ? (
+          <div style={{ padding: 32, textAlign: "center", color: C.slateL, fontSize: 13 }}>
+            Sin errores registrados.
+          </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -85,44 +124,50 @@ export default function AdminDashboard({ setPage }) {
               </tr>
             </thead>
             <tbody>
-              {errores.map((e) => (
-                <tr
-                  key={e.id}
-                  style={{ borderTop: `1px solid ${C.gray}` }}
-                  onMouseEnter={(ev) => (ev.currentTarget.style.background = C.grayLt)}
-                  onMouseLeave={(ev) => (ev.currentTarget.style.background = "transparent")}
-                >
-                  <td style={{ padding: "14px 20px" }}>
-                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: C.red, fontWeight: 600 }}>
-                      #{e.id}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 20px" }}>
-                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 600 }}>
-                      {e.job_id}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.coral, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-                        {e.usuario.charAt(0)}
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{e.usuario}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: "14px 20px", fontSize: 12, color: C.slateL }}>
-                    {new Date(e.fecha).toLocaleString("es-GT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                  </td>
-                  <td style={{ padding: "14px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                      <span style={{ color: C.red, flexShrink: 0 }}>⚠️</span>
-                      <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5 }}>
-                        {e.descripcion}
+              {errores.map((e) => {
+                // En modo demo el campo es "usuario"; en modo real el backend
+                // (JOIN con usuarios) lo devuelve como "nombre".
+                const usuario = e.usuario || e.nombre || "Desconocido";
+                const errorId = e.id || e.id_error;
+                return (
+                  <tr
+                    key={errorId}
+                    style={{ borderTop: `1px solid ${C.gray}` }}
+                    onMouseEnter={(ev) => (ev.currentTarget.style.background = C.grayLt)}
+                    onMouseLeave={(ev) => (ev.currentTarget.style.background = "transparent")}
+                  >
+                    <td style={{ padding: "14px 20px" }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: C.red, fontWeight: 600 }}>
+                        #{errorId}
                       </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 600 }}>
+                        {e.job_id}
+                      </span>
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.coral, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                          {usuario.charAt(0)}
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{usuario}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 20px", fontSize: 12, color: C.slateL }}>
+                      {parseUTC(e.fecha).toLocaleString("es-GT", { timeZone: "America/Guatemala", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <span style={{ color: C.red, flexShrink: 0 }}>⚠️</span>
+                        <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5 }}>
+                          {e.descripcion}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

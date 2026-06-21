@@ -11,9 +11,11 @@ jobs:
   terraform-drift:
     name: Terraform Drift Detection — dev
     runs-on: ubuntu-latest
+    environment: dev
 
     permissions:
       contents: read
+      actions: read
       id-token: write  # requerido para OIDC token exchange
 
     steps:

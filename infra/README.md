@@ -49,8 +49,9 @@ DLQ
 |---|---|---|
 | `dev` | `DEV_DB_PASSWORD` | Contraseña de la base de datos RDS de dev |
 | `staging` | `STAGING_DB_PASSWORD` | Contraseña de la base de datos RDS de staging |
+| `staging-plan` | `STAGING_DB_PASSWORD` | Contraseña de la base de datos RDS de staging |
 
-**Environments a crear** (`Settings → Environments`): `dev`, `staging` (staging con regla de aprobación manual opcional).
+**Environments a crear** (`Settings → Environments`): `dev`, `staging` (staging con regla de aprobación manual opcional), `staging-plan` .
 
 ### 3. Clonar y disparar el pipeline
 
@@ -90,65 +91,12 @@ Crea las tablas (`usuarios`, `trabajos`, `reportes`, `errores`, `reportes_vended
 ### Deliverable A — IAM Security Module
 
 ```
-# Se crean roles separados por servicio con políticas sin comodines
-+ resource "aws_iam_role" "lambda_api" {
-+   name = "oyd-project-dev-lambda-api-role"
-+ }
-+ resource "aws_iam_role_policy" "lambda_api_s3" {
-+   policy = {
-+     Statement = [
-+       { Action = ["s3:GetObject","s3:PutObject"], Resource = "arn:aws:s3:::oyd-project-dev-files/*" },
-+       { Action = ["s3:PutObject"], Resource = "arn:aws:s3:::oyd-project-dev-reports/*" }
-+     ]
-+   }
-+ }
-+ resource "aws_iam_role_policy" "lambda_api_sqs" {
-+   policy = {
-+     Statement = [{ Action = ["sqs:SendMessage"], Resource = "arn:aws:sqs:us-east-1:121218949493:spvr-jobs-queue" }]
-+   }
-+ }
-+ resource "aws_iam_role_policy" "lambda_api_rds" {
-+   policy = {
-+     Statement = [{ Action = ["rds:DescribeDBInstances"], Resource = "arn:aws:rds:us-east-1:121218949493:db:oyd-project-dev-db" }]
-+   }
-+ }
+module.iam.aws_iam_role.scheduler_exec: Refreshing state... [id=oyd-project-dev-scheduler-role]
+module.iam.aws_iam_role.lambda_cleanup: Refreshing state... [id=oyd-project-dev-lambda-cleanup-role]
+module.iam.aws_iam_role.lambda_worker: Refreshing state... [id=oyd-project-dev-lambda-worker-role]
+module.iam.aws_iam_role.lambda_api: Refreshing state... [id=oyd-project-dev-lambda-api-role]
+module.iam.aws_iam_role.ci_runner: Refreshing state... [id=oyd-project-dev-ci-runner-role]
 
-+ resource "aws_iam_role" "lambda_worker" {
-+   name = "oyd-project-dev-lambda-worker-role"
-+ }
-+ resource "aws_iam_role_policy" "lambda_worker_s3" {
-+   policy = {
-+     Statement = [
-+       { Action = ["s3:GetObject"], Resource = "arn:aws:s3:::oyd-project-dev-files/*" },
-+       { Action = ["s3:PutObject"], Resource = "arn:aws:s3:::oyd-project-dev-reports/*" }
-+     ]
-+   }
-+ }
-+ resource "aws_iam_role_policy" "lambda_worker_sqs" {
-+   policy = {
-+     Statement = [{ Action = ["sqs:ReceiveMessage","sqs:DeleteMessage","sqs:GetQueueAttributes"], Resource = "arn:aws:sqs:us-east-1:121218949493:spvr-jobs-queue" }]
-+   }
-+ }
-
-# OIDC provider para GitHub Actions
-+ resource "aws_iam_openid_connect_provider" "github" {
-+   url             = "https://token.actions.githubusercontent.com"
-+   client_id_list  = ["sts.amazonaws.com"]
-+ }
-
-# CI runner role con trust policy scoped al repositorio
-+ resource "aws_iam_role" "ci_runner" {
-+   name = "oyd-project-dev-ci-runner-role"
-+   assume_role_policy = {
-+     Statement = [{
-+       Action = "sts:AssumeRole"
-+       Principal = { Federated = "arn:aws:iam::121218949493:oidc-provider/token.actions.githubusercontent.com" }
-+       Condition = {
-+         StringEquals = { "token.actions.githubusercontent.com:sub" = "repo:sandra381/course_project_S2_2026:ref:refs/heads/main" }
-+       }
-+     }]
-+   }
-+ }
 ```
 `infra/evidence/iam-plan.txt` — plan de Terraform que muestra todos los roles, políticas y asociaciones de políticas (attachments) de IAM creados por el módulo de IAM.
 

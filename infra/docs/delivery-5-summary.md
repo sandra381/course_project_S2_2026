@@ -114,13 +114,14 @@ Esta configuración generaba errores de autorización de forma constante, aunque
 
 Al revisar en detalle cómo GitHub Actions construye el `subject claim` del token OIDC, se identificó que el formato cambia cuando un job declara explícitamente un `environment:` en el workflow. En ese caso, el subject ya no sigue el patrón `ref:refs/heads/main` ni `pull_request` — pasa a tener la forma `environment:<nombre>`, sin importar si el evento que disparó el workflow fue un `push` o un `pull_request`.
 
-Esto explica por qué el primer intento fallaba: ningún job real del pipeline generaba esos dos subjects exactos. Los jobs `terraform-plan-dev`, `terraform-plan-staging`, `terraform-apply-dev` y `terraform-apply-staging` declaran `environment: dev` o `environment: staging` (necesario para poder leer los Environment Secrets `DEV_DB_PASSWORD` y `STAGING_DB_PASSWORD`), por lo que su subject real es `environment:dev` o `environment:staging`. Solo el job `validate` (que no usa `environment:`) genera el subject `pull_request` tal como se esperaba originalmente.
+Esto explica por qué el primer intento fallaba: ningún job real del pipeline generaba esos dos subjects exactos. Los jobs `terraform-plan-dev`, `terraform-plan-staging`, `terraform-apply-dev` y `terraform-apply-staging` declaran `environment: dev` o `environment: staging-plan`o `environment: staging` (necesario para poder leer los Environment Secrets `DEV_DB_PASSWORD` y `STAGING_DB_PASSWORD`), por lo que su subject real es `environment:dev` o `environment:staging`o `environment:staging-plan`. Solo el job `validate` (que no usa `environment:`) genera el subject `pull_request` tal como se esperaba originalmente.
 
 La condición final, sin wildcard, quedó así:
 
 ```
 repo:<org>/<repo>:environment:dev
 repo:<org>/<repo>:environment:staging
+repo:<org>/<repo>:environment:staging-plan
 repo:<org>/<repo>:pull_request
 ```
 

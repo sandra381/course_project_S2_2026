@@ -355,6 +355,7 @@ resource "aws_iam_role" "ci_runner" {
             "token.actions.githubusercontent.com:sub" = [
               "repo:${var.github_org}/${var.github_repo}:environment:dev",
               "repo:${var.github_org}/${var.github_repo}:environment:staging",
+              "repo:${var.github_org}/${var.github_repo}:environment:staging-plan",
               "repo:${var.github_org}/${var.github_repo}:pull_request"
             ]
           }

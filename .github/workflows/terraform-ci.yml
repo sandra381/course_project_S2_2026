@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     needs: validate
-    environment: staging
+    environment: staging-plan
     permissions:
       contents: read
       id-token: write  # requerido para OIDC token exchange

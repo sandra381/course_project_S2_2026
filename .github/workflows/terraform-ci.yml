@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     needs: validate
-    environment: staging
+    environment: staging-plan
     permissions:
       contents: read
       id-token: write  # requerido para OIDC token exchange
@@ -218,7 +218,7 @@ jobs:
     name: Terraform Apply — dev
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: staging-plan
+    environment: staging
     permissions:
       contents: read
       actions: read

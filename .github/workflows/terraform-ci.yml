@@ -218,7 +218,7 @@ jobs:
     name: Terraform Apply — dev
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: staging
+    environment: dev
     permissions:
       contents: read
       actions: read

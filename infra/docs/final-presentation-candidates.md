@@ -99,14 +99,3 @@ después de obtenerlos, con manejo del caso de lista vacía para evitar
 división por cero, y agregar el campo al diccionario de respuesta.
 
 ---
-
-## Notas para la sesión
-
-- Los tres candidatos viven en el mismo archivo
-  (`infra/modules/compute/handler_api.py`) y no requieren tocar Terraform,
-  IAM, ni el esquema de la base de datos.
-- Verificación planeada por línea de comandos (`curl`), no por frontend —
-  el cambio se demuestra directamente contra el endpoint de staging.
-- El equipo debe rehearsar la mecánica de cada uno (ubicación exacta del
-  bloque, cómo construir y desplegar, cómo abrir el PR) sin pre-escribir
-  ni pre-stagear el código real antes de la asignación del instructor.

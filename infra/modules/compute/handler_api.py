@@ -277,13 +277,12 @@ def handler(event, context):
             with conn.cursor() as cursor:
                 if id_usuario:
                     cursor.execute(
-                        "SELECT * FROM trabajos WHERE id_usuario = %s ORDER BY fecha_carga DESC LIMIT %s OFFSET %s",
-                        (id_usuario, limit, offset)
+                        f"SELECT * FROM trabajos WHERE id_usuario = %s ORDER BY fecha_carga DESC LIMIT {limit} OFFSET {offset}",
+                        (id_usuario,)
                     )
                 else:
                     cursor.execute(
-                        "SELECT * FROM trabajos ORDER BY fecha_carga DESC LIMIT %s OFFSET %s",
-                        (limit, offset)
+                        f"SELECT * FROM trabajos ORDER BY fecha_carga DESC LIMIT {limit} OFFSET {offset}"
                     )
                 rows = [serialize_row(r) for r in cursor.fetchall()]
             conn.close()

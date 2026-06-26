@@ -279,6 +279,7 @@ def handler(event, context):
                     cursor.execute(
                         f"SELECT * FROM trabajos WHERE id_usuario = %s ORDER BY fecha_carga DESC LIMIT {limit} OFFSET {offset}",
                         (id_usuario,)
+                        
                     )
                 else:
                     cursor.execute(

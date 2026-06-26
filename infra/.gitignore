@@ -36,3 +36,7 @@ tfplan
 .vscode/
 .idea/
 *.swp
+
+modules/compute/lambda_api.zip
+modules/compute/lambda_worker.zip
+modules/scheduler/lambda_cleanup.zip

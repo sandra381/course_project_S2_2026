@@ -19,7 +19,7 @@ resource "aws_lambda_function" "cleanup" {
   memory_size      = 128
   timeout          = 30
   filename         = data.archive_file.lambda_cleanup_zip.output_path
-  source_code_hash = filebase64sha256("${path.module}/handler_cleanup.py")
+  source_code_hash = data.archive_file.lambda_cleanup_zip.output_base64sha256
   layers           = [var.pymysql_layer_arn]
 
   vpc_config {

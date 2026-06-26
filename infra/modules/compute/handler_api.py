@@ -270,16 +270,21 @@ def handler(event, context):
         try:
             query_params = event.get("queryStringParameters") or {}
             id_usuario   = query_params.get("id_usuario")
+            limit        = int(query_params.get("limit", 20))
+            offset       = int(query_params.get("offset", 0))
 
             conn = get_db_connection()
             with conn.cursor() as cursor:
                 if id_usuario:
                     cursor.execute(
-                        "SELECT * FROM trabajos WHERE id_usuario = %s ORDER BY fecha_carga DESC LIMIT 20",
-                        (id_usuario,)
+                        "SELECT * FROM trabajos WHERE id_usuario = %s ORDER BY fecha_carga DESC LIMIT %s OFFSET %s",
+                        (id_usuario, limit, offset)
                     )
                 else:
-                    cursor.execute("SELECT * FROM trabajos ORDER BY fecha_carga DESC LIMIT 20")
+                    cursor.execute(
+                        "SELECT * FROM trabajos ORDER BY fecha_carga DESC LIMIT %s OFFSET %s",
+                        (limit, offset)
+                    )
                 rows = [serialize_row(r) for r in cursor.fetchall()]
             conn.close()
             return ok({"jobs": rows})

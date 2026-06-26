@@ -245,7 +245,7 @@ jobs:
             const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
               owner: context.repo.owner, repo: context.repo.repo, commit_sha: context.sha
             });
-            const headSha = prs.data.length > 0 ? prs.data[0].head.sha : context.sha;
+            const headSha = prs.data[0].head.sha;
 
             const runs = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
@@ -310,8 +310,8 @@ jobs:
             const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
               owner: context.repo.owner, repo: context.repo.repo, commit_sha: context.sha
             });
-            const headSha = prs.data.length > 0 ? prs.data[0].head.sha : context.sha;
-            
+            const headSha = prs.data[0].head.sha;
+
             const runs = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,

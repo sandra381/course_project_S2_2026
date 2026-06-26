@@ -278,8 +278,7 @@ def handler(event, context):
                 if id_usuario:
                     cursor.execute(
                         f"SELECT * FROM trabajos WHERE id_usuario = %s ORDER BY fecha_carga DESC LIMIT {limit} OFFSET {offset}",
-                        (id_usuario,)
-                        
+                        (id_usuario,limit,offset)
                     )
                 else:
                     cursor.execute(
